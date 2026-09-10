@@ -462,7 +462,7 @@ export default function AppMolienda() {
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
               <textarea 
-                rows="2"
+                rows={2}
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
                 placeholder="Ej: Despachar antes de las 2:00 PM"
