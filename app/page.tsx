@@ -201,11 +201,12 @@ export default function AppMolienda() {
     setCantidad('');
   };
 
-  const generarTextoWhatsApp = () => {
+    const generarTextoWhatsApp = () => {
     const fecha = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
     let txt = `*NUEVO PEDIDO DE MOLIENDA*\n`;
     txt += `📅 *Fecha:* ${fecha}\n`;
     txt += `👤 *Cliente:* ${cliente || 'No especificado'}\n`;
+    if (rifCliente) txt += `🆔 *RIF:* ${rifCliente}\n`; // <-- Verifica que tengas esta línea
     if (telefonoCliente) txt += `📞 *Teléfono:* ${telefonoCliente}\n`;
     txt += `-----------------------------------\n`;
     txt += `📦 *DETALLE DEL PEDIDO:*\n`;
@@ -222,6 +223,7 @@ export default function AppMolienda() {
     return txt;
   };
 
+
   const copiarAlPortapapeles = () => {
     if (carrito.length === 0) return;
     const texto = generarTextoWhatsApp();
@@ -230,14 +232,16 @@ export default function AppMolienda() {
     setTimeout(() => setCopiado(false), 2500);
   };
 
-  const enviarPorWhatsApp = () => {
+   const enviarPorWhatsApp = () => {
     if (carrito.length === 0) return;
     const texto = encodeURIComponent(generarTextoWhatsApp());
-    const url = telefonoCliente 
-      ? `https://api.whatsapp.com/send?phone=${telefonoCliente.replace(/\D/g, '')}&text=${texto}`
-      : `https://api.whatsapp.com/send?text=${texto}`;
+    
+    // Al no colocar "phone=", WhatsApp te dejará elegir libremente el contacto
+    const url = `https://whatsapp.com{texto}`;
+    
     window.open(url, '_blank');
   };
+
 
   if (loading) {
     return (
