@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Settings, Trash2, CalendarDays, Hammer, Package, AlertTriangle, ShoppingCart, Copy, Check, Send, Lock, LogOut, ShieldCheck } from 'lucide-react';
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=2047349943&single=true&output=csv";
+const CLIENTES_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv";
 
 // Clave de prueba para la vista de gerencia
 const PIN_GERENCIA = "1234";
@@ -72,6 +73,27 @@ export default function AppMolienda() {
 
   // DATOS DEL DASHBOARD
   const [data, setData] = useState([]);
+    const [listaClientes, setListaClientes] = useState([]);
+    const [rifCliente, setRifCliente] = useState('');
+
+
+  useEffect(() => {
+    fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`)
+      .then(res => res.text())
+      .then(text => {
+        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        const parsed = rows.slice(1).map(row => {
+          const cols = row.split(',');
+          return {
+            nombre: cols[0]?.replace(/"/g, '').trim() || '',
+            rif: cols[1]?.replace(/"/g, '').trim() || '',
+            telefono: cols[2]?.replace(/"/g, '').trim() || ''
+          };
+        });
+        setListaClientes(parsed);
+      }).catch(e => console.error("Error cargando clientes molienda:", e));
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inventory, setInventory] = useState({ pol: 0, pap: 0, big: 0 });
@@ -331,21 +353,49 @@ export default function AppMolienda() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* FORMULARIO */}
+         {/* FORMULARIO */}
           <div className="lg:col-span-7 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
+                <select 
+                  value={cliente}
+                  onChange={(e) => {
+                    const nombreSeleccionado = e.target.value;
+                    setCliente(nombreSeleccionado);
+                    const encontrado = listaClientes.find(c => c.nombre === nombreSeleccionado);
+                    if (encontrado) {
+                      setRifCliente(encontrado.rif);
+                      setTelefonoCliente(encontrado.telefono);
+                    } else {
+                      setRifCliente('');
+                      setTelefonoCliente('');
+                    }
+                  }}
+                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 appearance-none"
+                >
+                  <option value="" className="bg-[#0a0f1c] text-slate-500">-- Selecciona un Cliente --</option>
+                  {listaClientes.map((c, index) => (
+                    <option key={index} value={c.nombre} className="bg-[#0a0f1c]">
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">RIF del Cliente</label>
                 <input 
                   type="text" 
-                  value={cliente}
-                  onChange={(e) => setCliente(e.target.value)}
-                  placeholder="Ej: Distribuidora Central" 
-                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  value={rifCliente}
+                  readOnly
+                  placeholder="Se llena automático" 
+                  className="w-full bg-[#0a0f1c]/50 border border-slate-700/60 rounded-xl px-4 py-2.5 text-sm text-slate-400 cursor-not-allowed focus:outline-none"
                 />
               </div>
+
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Teléfono (opcional)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Teléfono</label>
                 <input 
                   type="text" 
                   value={telefonoCliente}
@@ -355,6 +405,8 @@ export default function AppMolienda() {
                 />
               </div>
             </div>
+
+
 
             <div className="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-4">
               <p className="text-[11px] font-bold text-blue-400 uppercase">Agregar Producto al Pedido</p>
@@ -410,7 +462,7 @@ export default function AppMolienda() {
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
               <textarea 
-                rows={2}
+                rows="2"
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
                 placeholder="Ej: Despachar antes de las 2:00 PM"
