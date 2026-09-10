@@ -232,11 +232,11 @@ export default function AppMolienda() {
     setTimeout(() => setCopiado(false), 2500);
   };
 
-   const enviarPorWhatsApp = () => {
+     const enviarPorWhatsApp = () => {
     if (carrito.length === 0) return;
     const texto = encodeURIComponent(generarTextoWhatsApp());
     
-    // Al no colocar "phone=", WhatsApp te dejará elegir libremente el contacto
+    // Al usar solo "text=", el celular abrirá WhatsApp para que elijas libremente el contacto
     const url = `https://whatsapp.com{texto}`;
     
     window.open(url, '_blank');
@@ -506,13 +506,19 @@ export default function AppMolienda() {
                 {copiado ? '¡Copiado!' : 'Copiar Texto'}
               </button>
 
-              <button 
-                onClick={enviarPorWhatsApp}
-                disabled={carrito.length === 0}
-                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
-              >
-                <Send size={16} /> Enviar WhatsApp
-              </button>
+             <button 
+  onClick={enviarPorWhatsApp}
+  disabled={carrito.length === 0}
+  className={`inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all ${
+    carrito.length > 0 
+      ? 'bg-green-600 hover:bg-green-700 cursor-pointer shadow-md active:scale-95' 
+      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+  }`}
+>
+  <Send className="w-4 h-4" />
+  Enviar por WhatsApp
+</button>
+
             </div>
           </div>
 
