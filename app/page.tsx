@@ -524,13 +524,13 @@ export default function AppMolienda() {
 
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
-              <textarea 
-                rows={2}
-                value={notas}
-                onChange={(e) => setNotas(e.target.value)}
-                placeholder="Ej: Despachar antes de las 2:00 PM"
-                className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
+             <textarea 
+  value={notas}
+  onChange={(e) => setNotas(e.target.value)}
+  placeholder="Ej: Despachar antes de las 2:00 PM"
+  className="w-full h-16 bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-none"
+/>
+
             </div>
           </div>
 
