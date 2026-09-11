@@ -668,15 +668,19 @@ export default function AppMolienda() {
         </div>
       )}
 
-    </div>
-  );
-}
+     {/* Agregamos este cierre de fragmento para sanear cualquier div que haya quedado suelto arriba */}
+  </>
+  ); // Cierre del return principal de la aplicación
+} // Cierre definitivo de tu función de componente principal
 
+// ─── TUS COMPONENTES AUXILIARES COMIENZAN AQUÍ ABAJO ───
 function TotalCard({ label, val, col }) {
   return (
     <div className="bg-[#141b2d] p-4 rounded-2xl border border-slate-800 text-center">
       <p className="text-[9px] text-slate-500 uppercase font-black mb-1">{label}</p>
-      <p className={`text-xl font-black ${col}`}>{val.toLocaleString(undefined, { maximumFractionDigits: 1 })}</p>
+      <p className={`text-xl font-black ${col}`}>
+        {val.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+      </p>
     </div>
   );
 }
