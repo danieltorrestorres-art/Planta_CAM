@@ -457,7 +457,7 @@ export default function AppMolienda() {
       </select>
     </div>
 
-    <div>
+       <div>
       <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Cantidad (Tn)</label>
       <input 
         type="number" 
@@ -469,7 +469,7 @@ export default function AppMolienda() {
       />
     </div>
 
-    {/* 🟢 NUEVO INPUT: PRECIO POR TONELADA CON DETALLE EN VERDE */}
+    {/* 1. INPUT DE PRECIO UNITARIO PERFECTAMENTE INTEGRADO */}
     <div>
       <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Precio Unitario ($)</label>
       <input 
@@ -482,107 +482,90 @@ export default function AppMolienda() {
       />
     </div>
 
-    {/* Nota: Si tenías el selector de Empaque o el botón dentro de este grid, 
-        quedará en la 4ta columna de forma automática y alineada */}
+    {/* 2. SELECTOR DE PRESENTACIÓN INTEGRADO EN LA SIGUIENTE COLUMNA */}
+    <div>
+      <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Presentación</label>
+      <select 
+        value={empaque}
+        onChange={(e) => setEmpaque(e.target.value)}
+        className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+      >
+        <option value="Sacos 25kg">Sacos 25kg</option>
+        <option value="Big Bags 1000kg">Big Bags 1000kg</option>
+        <option value="A granel">A granel</option>
+      </select>
+    </div>
+  </div> {/* Cierra el grid interno de las columnas */}
+</div> {/* Cierra la tarjeta contenedora del formulario "Agregar Producto al Pedido" */}
+
+{/* 3. BOTÓN Y NOTAS DEBAJO DEL FORMULARIO */}
+<div className="space-y-4 mt-4">
+  <button 
+    onClick={agregarAlPedido}
+    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors uppercase tracking-wider"
+  >
+    + Añadir al Pedido
+  </button>
+
+  <div>
+    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
+    <textarea 
+      value={notas}
+      onChange={(e) => setNotas(e.target.value)}
+      placeholder="Ej: Despachar antes de las 2:00 PM"
+      className="w-full h-16 bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-none"
+    />
   </div>
 </div>
 
-{/* NUEVO INPUT: PRECIO POR TONELADA */}
-<div className="mb-3">
-  <label className="block text-[px] font-bold text-gray-400 uppercase mb-1">Precio por Tonelada ($ USD)</label>
-  <input 
-    type="number" 
-    step="0.01"
-    className="w-full p-3 bg-[#] text-white border border-l-4 border-l-green-500 border-y-gray-800 border-r-gray-800 rounded-lg outline-none font-medium" 
-    placeholder="Monto negociado libre" 
-    value={precioUnitario} 
-    onChange={(e) => setPrecioUnitario(e.target.value)} 
-  />
+</div> {/* Cierra la columna izquierda del diseño principal */}
+
+{/* VISTA PREVIA Y ACCIONES (COLUMNA DERECHA) */}
+<div className="lg:col-span-5 flex flex-col justify-between bg-[#0a0f1c] p-5 rounded-2xl border border-slate-800">
+  <div>
+    <div className="flex justify-between items-center mb-3">
+      <span className="text-[11px] font-bold uppercase text-slate-400">Mensaje para WhatsApp</span>
+      <span className="text-[10px] font-mono text-emerald-400">{carrito.length} ítem(s)</span>
+    </div>
+
+    <div className="bg-[#141b2d] p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 min-h-[160px] whitespace-pre-wrap leading-relaxed">
+      {carrito.length === 0 ? (
+        <span className="text-slate-600 italic">Agrega productos para generar el mensaje...</span>
+      ) : (
+        generarTextoWhatsApp()
+      )}
+    </div>
+  </div>
+
+  {/* BOTONES DE ACCIÓN: COPIAR Y ENVIAR */}
+  <div className="mt-4 grid grid-cols-2 gap-3">
+    <button 
+      onClick={copiarAlPortapapeles}
+      disabled={carrito.length === 0}
+      className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+        copiado 
+          ? 'bg-emerald-600 text-white' 
+          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40'
+      }`}
+    >
+      {copiado ? '¡Copiado!' : 'Copiar Texto'}
+    </button>
+
+    <button 
+      onClick={enviarPorWhatsApp}
+      disabled={carrito.length === 0}
+      className={`inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all ${
+        carrito.length > 0 
+          ? 'bg-green-600 hover:bg-green-700 cursor-pointer shadow-md active:scale-95' 
+          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+      }`}
+    >
+      Enviar por WhatsApp
+    </button>
+  </div>
 </div>
 
-                <div>
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Presentación</label>
-                  <select 
-                    value={empaque}
-                    onChange={(e) => setEmpaque(e.target.value)}
-                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="Sacos 25kg">Sacos 25kg</option>
-                    <option value="Big Bags 1000kg">Big Bags 1000kg</option>
-                    <option value="A granel">A granel</option>
-                  </select>
-                </div>
-              </div>
-
-              <button 
-                onClick={agregarAlPedido}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors uppercase tracking-wider"
-              >
-                + Añadir al Pedido
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
-             <textarea 
-  value={notas}
-  onChange={(e) => setNotas(e.target.value)}
-  placeholder="Ej: Despachar antes de las 2:00 PM"
-  className="w-full h-16 bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-none"
-/>
-
-            </div>
-          </div>
-
-          {/* VISTA PREVIA Y ACCIONES */}
-          <div className="lg:col-span-5 flex flex-col justify-between bg-[#0a0f1c] p-5 rounded-2xl border border-slate-800">
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-[11px] font-bold uppercase text-slate-400">Mensaje para WhatsApp</span>
-                <span className="text-[10px] font-mono text-emerald-400">{carrito.length} ítem(s)</span>
-              </div>
-
-              <div className="bg-[#141b2d] p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 min-h-[160px] whitespace-pre-wrap leading-relaxed">
-                {carrito.length === 0 ? (
-                  <span className="text-slate-600 italic">Agrega productos para generar el mensaje...</span>
-                ) : (
-                  generarTextoWhatsApp()
-                )}
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button 
-                onClick={copiarAlPortapapeles}
-                disabled={carrito.length === 0}
-                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-                  copiado 
-                    ? 'bg-emerald-600 text-white' 
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40'
-                }`}
-              >
-                {copiado ? <Check size={16} /> : <Copy size={16} />}
-                {copiado ? '¡Copiado!' : 'Copiar Texto'}
-              </button>
-
-             <button 
-  onClick={enviarPorWhatsApp}
-  disabled={carrito.length === 0}
-  className={`inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all ${
-    carrito.length > 0 
-      ? 'bg-green-600 hover:bg-green-700 cursor-pointer shadow-md active:scale-95' 
-      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-  }`}
->
-  <Send className="w-4 h-4" />
-  Enviar por WhatsApp
-</button>
-
-            </div>
-          </div>
-
-        </div>
-      </div>
+</div> {/* Cierra el grid principal de dos columnas de la aplicación */}
 
       {/* ======================================================== */}
       {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO) */}
