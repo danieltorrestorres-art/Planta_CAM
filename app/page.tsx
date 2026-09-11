@@ -111,11 +111,51 @@ export default function AppMolienda() {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
-      for (let i = 1; i < rows.length; i++) {
+           for (let i = 1; i < rows.length; i++) {
         const cols = parseCSVLine(rows[i]);
-        if (cleanNum(cols) > 0) lastPol = cleanNum(cols);
-        if (cleanNum(cols) > 0) lastPap = cleanNum(cols);
-        if (cleanNum(cols) > 0) lastBig = cleanNum(cols);
+        
+        // 🟢 CORREGIDO: Asignamos los índices reales de las columnas para los sacos
+        if (cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
+        if (cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
+        if (cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
+
+        // 🟢 CORREGIDO: Extraemos la fecha de la primera columna (índice 0)
+        const fechaStr = cols[0]?.trim();
+        
+        if (fechaStr && fechaStr.length > 5) {
+          // 🟢 CORREGIDO: Asignamos los índices correctos para la producción diaria
+          const vC = cleanNum(cols[1]);
+          const vY = cleanNum(cols[2]);
+          const v200 = cleanNum(cols[3]);
+          const v400g = cleanNum(cols[4]);
+          const v400b = cleanNum(cols[5]);
+          const vDesp = cleanNum(cols[6]);
+          const vM = cleanNum(cols[7]);
+          const vMaquila = cleanNum(cols[14]);
+
+          tc += vC; ty += vY; t200 += v200; t400g += v400g; t400b += v400b; td += vDesp; tm += vM;
+          tmaq += vMaquila;
+
+          const dateParts = parseDateParts(fechaStr);
+          if (dateParts && dateParts.month === currentMonth && dateParts.year === currentYear) {
+            mProd += (vC + vY + v200 + v400g + v400b);
+            mMerma += vM;
+          }
+
+          if (!dailyMap[fechaStr]) {
+            dailyMap[fechaStr] = { fecha: fechaStr, caolin: 0, yeso: 0, carb200: 0, carb400G: 0, carb400B: 0, despachado: 0, merma: 0, maquila: 0 };
+          }
+          dailyMap[fechaStr].caolin += vC;
+          dailyMap[fechaStr].yeso += vY;
+          dailyMap[fechaStr].carb200 += v200;
+          dailyMap[fechaStr].carb400G += v400g;
+          dailyMap[fechaStr].carb400B += v400b;
+          dailyMap[fechaStr].despachado += vDesp;
+          dailyMap[fechaStr].merma += vM;
+          dailyMap[fechaStr].maquila += vMaquila;
+        }
+      }
+
 
         const fechaStr = cols?.trim();
         if (fechaStr && fechaStr.length > 5) {
@@ -166,7 +206,7 @@ export default function AppMolienda() {
     fetchData(); 
   }, []);
 
-  useEffect(() => {
+   useEffect(() => {
     fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`)
       .then(res => res.text())
       .then(text => {
@@ -174,14 +214,21 @@ export default function AppMolienda() {
         const parsed = rows.slice(1).map(row => {
           const cols = row.split(',');
           return {
-            nombre: cols?.replace(/"/g, '').trim() || '',
-            rif: cols?.replace(/"/g, '').trim() || '',
-            telefono: cols?.replace(/"/g, '').trim() || ''
+            nombre: cols[0]?.replace(/"/g, '').trim() || '',
+            rif: cols[1]?.replace(/"/g, '').trim() || '',
+            telefono: cols[2]?.replace(/"/g, '').trim() || ''
           };
         });
         setListaClientes(parsed);
       }).catch(e => console.error("Error cargando clientes molienda:", e));
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setError(null);
+      const response = await fetch(`${SHEET_URL}&t=${Date.now()}`);
+      if (!response.ok) throw new Error("No se pudo obtener la información de Google Sheets");
+
 
   // AUTENTICACIÓN
   const validarAcceso = (e) => {
