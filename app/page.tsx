@@ -16,6 +16,7 @@ const PRODUCTOS_DISPONIBLES = [
   "Carbonato 200",
   "Carbonato 400G",
   "Carbonato 400B",
+  "Talco", // <-- Agregado con éxito
   "Servicio de Maquila"
 ];
 
@@ -194,26 +195,51 @@ export default function AppMolienda() {
     }
   };
 
-  // LÓGICA DE PEDIDOS
+  //   // ─── LÓGICA DE PEDIDOS (ACTUALIZADA CON PRECIOS Y TOTALES) ───
   const agregarAlPedido = () => {
     if (!cantidad || parseFloat(cantidad) <= 0) return;
-    setCarrito([...carrito, { producto: productoSeleccionado, cantidad: parseFloat(cantidad), empaque }]);
+    if (!precioUnitario || parseFloat(precioUnitario) <= 0) {
+      alert("Por favor, ingresa el precio negociado para este producto.");
+      return;
+    }
+
+    const cantidadNum = parseFloat(cantidad);
+    const precioNum = parseFloat(precioUnitario);
+    const [precioUnitario, setPrecioUnitario] = useState('');
+
+    setCarrito([...carrito, { 
+      producto: productoSeleccionado, 
+      cantidad: cantidadNum, 
+      empaque: empaque,
+      precio: precioNum,
+      subtotal: cantidadNum * precioNum // <-- Guardamos el subtotal de esta línea
+    }]);
+
+    // Limpiamos los inputs del formulario para el siguiente producto
     setCantidad('');
+    setPrecioUnitario('');
   };
 
-    const generarTextoWhatsApp = () => {
+  // Cálculo automático del total en tiempo real sumando los subtotales del carrito
+  const totalGeneralPedido = carrito.reduce((acc, item) => acc + (item.subtotal || 0), 0);
+
+  const generarTextoWhatsApp = () => {
     const fecha = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
     let txt = `*NUEVO PEDIDO DE MOLIENDA*\n`;
     txt += `📅 *Fecha:* ${fecha}\n`;
     txt += `👤 *Cliente:* ${cliente || 'No especificado'}\n`;
-    if (rifCliente) txt += `🆔 *RIF:* ${rifCliente}\n`; // <-- Verifica que tengas esta línea
+    if (typeof rifCliente !== 'undefined' && rifCliente) txt += `🆔 *RIF:* ${rifCliente}\n`; 
     if (telefonoCliente) txt += `📞 *Teléfono:* ${telefonoCliente}\n`;
     txt += `-----------------------------------\n`;
     txt += `📦 *DETALLE DEL PEDIDO:*\n`;
     
     carrito.forEach((item, idx) => {
-      txt += `${idx + 1}. *${item.producto}* - ${item.cantidad} Tn (${item.empaque})\n`;
+      // Ahora cada línea muestra su precio unitario y el subtotal calculado en dólares
+      txt += `${idx + 1}. *${item.producto}* - ${item.cantidad} Tn (${item.empaque}) a $${item.precio.toFixed(2)}/Tn -> *$${item.subtotal.toFixed(2)}*\n`;
     });
+
+    txt += `-----------------------------------\n`;
+    txt += `💰 *TOTAL GENERAL:* *$${totalGeneralPedido.toFixed(2)} USD*\n`; // <-- Gran total del pedido
 
     if (notas) {
       txt += `-----------------------------------\n`;
