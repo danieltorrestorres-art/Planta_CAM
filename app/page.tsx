@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Settings, Trash2, CalendarDays, Hammer, Package, AlertTriangle, ShoppingCart, Copy, Check, Send, Lock, LogOut, ShieldCheck } from 'lucide-react';
 
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pubhtml?gid=2047349943&single=true";
-const CLIENTES_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pubhtml?gid=209700947&single=true";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=2047349943&single=true&output=csv";
+const CLIENTES_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv";
 
 // Clave de prueba para la vista de gerencia
 const PIN_GERENCIA = "1234";
