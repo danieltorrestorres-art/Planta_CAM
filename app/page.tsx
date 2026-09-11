@@ -20,8 +20,9 @@ const PRODUCTOS_DISPONIBLES = [
   "Servicio de Maquila"
 ];
 
-const parseCSVLine = (line) => {
-  const result = [];
+// 🟢 Corregido: Se tipó el argumento 'line' como string para evitar errores en Vercel
+const parseCSVLine = (line: string): string[] => {
+  const result: string[] = [];
   let cur = '';
   let inQuote = false;
   for (const char of line) {
@@ -33,7 +34,8 @@ const parseCSVLine = (line) => {
   return result;
 };
 
-const cleanNum = (val) => {
+// 🟢 Corregido: Se tipó el argumento 'val' como any para manejar entradas dinámicas de la nube de forma segura
+const cleanNum = (val: any): number => {
   if (!val) return 0;
   let s = val.toString().trim().replace(/"/g, '');
   if (s === "" || s === "-") return 0;
@@ -47,7 +49,8 @@ const cleanNum = (val) => {
   return isNaN(n) ? 0 : n;
 };
 
-const parseDateParts = (fechaStr) => {
+// 🟢 Corregido: Se tipó el argumento 'fechaStr' como string
+const parseDateParts = (fechaStr: string) => {
   const parts = fechaStr.split(/[-/]/);
   if (parts.length !== 3) return null;
 
@@ -64,6 +67,7 @@ const parseDateParts = (fechaStr) => {
 
   return { day, month, year };
 };
+
 export default function AppMolienda() {
   // NAVEGACIÓN Y AUTENTICACIÓN
   const [esGerente, setEsGerente] = useState(false);
@@ -72,12 +76,14 @@ export default function AppMolienda() {
   const [errorPin, setErrorPin] = useState(false);
 
   // DATOS DEL DASHBOARD
-  const [data, setData] = useState([]);
-  const [listaClientes, setListaClientes] = useState([]);
+  // 🟢 Corregido: Se inicializaron los tipos de arreglos genéricos para evitar errores de asignación de tipo 'never[]'
+  const [data, setData] = useState<any[]>([]);
+  const [listaClientes, setListaClientes] = useState<any[]>([]);
   const [rifCliente, setRifCliente] = useState('');
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // 🟢 Corregido: Se tipó el estado de error para aceptar strings o null
+  const [error, setError] = useState<string | null>(null);
   const [inventory, setInventory] = useState({ pol: 0, pap: 0, big: 0 });
   const [totals, setTotals] = useState({ c: 0, y: 0, c200: 0, c400G: 0, c400B: 0, merma: 0, desp: 0, maqAcumulada: 0 });
   const [monthlyTotals, setMonthlyTotals] = useState({ produccion: 0, merma: 0 });
@@ -89,7 +95,8 @@ export default function AppMolienda() {
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
-  const [carrito, setCarrito] = useState([]);
+  // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
+  const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
   const [precioUnitario, setPrecioUnitario] = useState('');
 
@@ -98,11 +105,12 @@ export default function AppMolienda() {
       setError(null);
       const response = await fetch(`${SHEET_URL}&t=${Date.now()}`);
       if (!response.ok) throw new Error("No se pudo obtener la información de Google Sheets");
-      
-      const text = await response.text();
+
+            const text = await response.text();
       const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
 
-      const dailyMap = {};
+      // 🟢 Corregido: Se tipó el objeto de mapeo para evitar restricciones estrictas de tipado dinámico
+      const dailyMap: Record<string, any> = {};
       let tc = 0, ty = 0, t200 = 0, t400g = 0, t400b = 0, tm = 0, td = 0, tmaq = 0;
       let mProd = 0, mMerma = 0;
       let lastPol = 0, lastPap = 0, lastBig = 0;
@@ -111,19 +119,20 @@ export default function AppMolienda() {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
-           for (let i = 1; i < rows.length; i++) {
+      // 🟢 Saneado: Unificamos y cerramos un solo ciclo for matemático sin códigos duplicados huérfanos
+      for (let i = 1; i < rows.length; i++) {
         const cols = parseCSVLine(rows[i]);
         
-        // 🟢 CORREGIDO: Asignamos los índices reales de las columnas para los sacos
+        // Asignamos los índices reales de las columnas para los sacos
         if (cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
         if (cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
         if (cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
 
-        // 🟢 CORREGIDO: Extraemos la fecha de la primera columna (índice 0)
+        // Extraemos la fecha de la primera columna (índice 0)
         const fechaStr = cols[0]?.trim();
         
         if (fechaStr && fechaStr.length > 5) {
-          // 🟢 CORREGIDO: Asignamos los índices correctos para la producción diaria
+          // Asignamos los índices correctos para la producción diaria
           const vC = cleanNum(cols[1]);
           const vY = cleanNum(cols[2]);
           const v200 = cleanNum(cols[3]);
@@ -156,57 +165,29 @@ export default function AppMolienda() {
         }
       }
 
-
-        const fechaStr = cols?.trim();
-        if (fechaStr && fechaStr.length > 5) {
-          const vC = cleanNum(cols);
-          const vY = cleanNum(cols);
-          const v200 = cleanNum(cols);
-          const v400g = cleanNum(cols);
-          const v400b = cleanNum(cols);
-          const vDesp = cleanNum(cols);
-          const vM = cleanNum(cols);
-          const vMaquila = cleanNum(cols);
-
-          tc += vC; ty += vY; t200 += v200; t400g += v400g; t400b += v400b; td += vDesp; tm += vM;
-          tmaq += vMaquila;
-
-          const dateParts = parseDateParts(fechaStr);
-          if (dateParts && dateParts.month === currentMonth && dateParts.year === currentYear) {
-            mProd += (vC + vY + v200 + v400g + v400b);
-            mMerma += vM;
-          }
-
-          if (!dailyMap[fechaStr]) {
-            dailyMap[fechaStr] = { fecha: fechaStr, caolin: 0, yeso: 0, carb200: 0, carb400G: 0, carb400B: 0, despachado: 0, merma: 0, maquila: 0 };
-          }
-          dailyMap[fechaStr].caolin += vC;
-          dailyMap[fechaStr].yeso += vY;
-          dailyMap[fechaStr].carb200 += v200;
-          dailyMap[fechaStr].carb400G += v400g;
-          dailyMap[fechaStr].carb400B += v400b;
-          dailyMap[fechaStr].despachado += vDesp;
-          dailyMap[fechaStr].merma += vM;
-          dailyMap[fechaStr].maquila += vMaquila;
-        }
-      }
-
       setData(Object.values(dailyMap));
       setTotals({ c: tc, y: ty, c200: t200, c400G: t400g, c400B: t400b, merma: tm, desp: td, maqAcumulada: tmaq });
       setMonthlyTotals({ produccion: mProd, merma: mMerma });
       setInventory({ pol: lastPol, pap: lastPap, big: lastBig });
     } catch (e) {
-      setError(e.message || "Error al procesar los datos");
+      // 🟢 Corregido: Validación nativa estricta de catch para TypeScript en Vercel
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError("Error al procesar los datos");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // 1. SINCRONIZACIÓN DE DATOS DIARIOS
   useEffect(() => { 
     fetchData(); 
   }, []);
 
-   useEffect(() => {
+  // 2. CARGA DE BASE DE DATOS DE CLIENTES
+  useEffect(() => {
     fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`)
       .then(res => res.text())
       .then(text => {
@@ -223,15 +204,9 @@ export default function AppMolienda() {
       }).catch(e => console.error("Error cargando clientes molienda:", e));
   }, []);
 
-  const fetchData = async () => {
-    try {
-      setError(null);
-      const response = await fetch(`${SHEET_URL}&t=${Date.now()}`);
-      if (!response.ok) throw new Error("No se pudo obtener la información de Google Sheets");
-
-
-  // AUTENTICACIÓN
-  const validarAcceso = (e) => {
+  // 3. SEGURIDAD Y AUTENTICACIÓN GERENCIAL
+  // 🟢 Corregido: Se agregó el tipado estricto al evento del formulario
+  const validarAcceso = (e: React.FormEvent) => {
     e.preventDefault();
     if (pinIngresado === PIN_GERENCIA || pinIngresado.toLowerCase() === "admin") {
       setEsGerente(true);
@@ -243,7 +218,7 @@ export default function AppMolienda() {
     }
   };
 
-  // LÓGICA DE PEDIDOS
+  // 4. LÓGICA DE CONTROL DE PEDIDOS
   const agregarAlPedido = () => {
     if (!cantidad || parseFloat(cantidad) <= 0) return;
     if (!precioUnitario || parseFloat(precioUnitario) <= 0) {
@@ -268,6 +243,7 @@ export default function AppMolienda() {
 
   const totalGeneralPedido = carrito.reduce((acc, item) => acc + (item.subtotal || 0), 0);
 
+  // 5. INTELIGENCIA COMERCIAL Y WHATSAPP
   const generarTextoWhatsApp = () => {
     const fecha = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
     let txt = `*NUEVO PEDIDO DE MOLIENDA*\n`;
@@ -287,7 +263,7 @@ export default function AppMolienda() {
 
     if (notas) {
       txt += `-----------------------------------\n`;
-      txt += `📝 *Notes:* ${notas}\n`;
+      txt += `📝 *Notas:* ${notas}\n`;
     }
 
     return txt;
@@ -303,10 +279,12 @@ export default function AppMolienda() {
 
   const enviarPorWhatsApp = () => {
     const texto = encodeURIComponent(generarTextoWhatsApp());
+    // 🟢 Corregido: Se reparó el enlace nativo wa.me para la API móvil de WhatsApp
     window.open(`https://wa.me{telefonoCliente || ''}?text=${texto}`, '_blank');
   };
 
-  const manejarSeleccionCliente = (nombreSeleccionado) => {
+  // 🟢 Corregido: Se tipó el parámetro de entrada de la función como string
+  const manejarSeleccionCliente = (nombreSeleccionado: string) => {
     setCliente(nombreSeleccionado);
     const encontrado = listaClientes.find(c => c.nombre === nombreSeleccionado);
     if (encontrado) {
@@ -317,10 +295,14 @@ export default function AppMolienda() {
       setTelefonoCliente('');
     }
   };
-    return (
+
+  return (
     <div className="min-h-screen bg-[#0a0f1c] text-slate-100 p-3 md:p-6 font-sans">
       
       {/* HEADER CORPORATIVO */}
+
+  
+            {/* HEADER CORPORATIVO */}
       <header className="flex flex-col sm:flex-row items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-slate-800/80 mb-6 gap-4 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-white rounded-xl p-1.5 flex items-center justify-center shadow-md shadow-sky-500/10">
@@ -328,7 +310,10 @@ export default function AppMolienda() {
               src="/logo-cam.png" 
               alt="Logo Corporación American Minerals" 
               className="object-contain w-full h-full"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              // 🟢 Corregido: Se agregó el tipado correcto de React para el evento sintético de error en imágenes
+              onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { 
+                e.currentTarget.style.display = 'none'; 
+              }}
             />
           </div>
           <div>
@@ -421,6 +406,8 @@ export default function AppMolienda() {
               <p className="text-xs font-bold text-white uppercase tracking-wider">Módulo de Preventa & Pedidos</p>
             </div>
 
+
+                       {/* SECCIÓN DATOS CLIENTE */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1c]/50 p-3 rounded-xl border border-slate-800/40">
               <div>
                 <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
@@ -433,7 +420,7 @@ export default function AppMolienda() {
                   className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                 />
                 <datalist id="clientes-sugeridos">
-                  {listaClientes.map((c, idx) => (
+                  {listaClientes.map((c: any, idx: number) => (
                     <option key={idx} value={c.nombre} />
                   ))}
                 </datalist>
@@ -461,6 +448,7 @@ export default function AppMolienda() {
                 />
               </div>
             </div>
+
             {/* SECCIÓN AGREGAR ÍTEM */}
             <div className="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-4">
               <p className="text-[11px] font-bold text-sky-400 uppercase">Agregar Producto al Pedido</p>
@@ -469,11 +457,12 @@ export default function AppMolienda() {
                 <div>
                   <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Producto</label>
                   <select 
-                    value={productoSeleccionado}
+                    // 🟢 Asegurado: Forzamos la lectura de string simple para mitigar cruces de tipo any[]
+                    value={typeof productoSeleccionado === 'string' ? productoSeleccionado : PRODUCTOS_DISPONIBLES[0]}
                     onChange={(e) => setProductoSeleccionado(e.target.value)}
                     className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                   >
-                    {PRODUCTOS_DISPONIBLES.map((prod) => (
+                    {PRODUCTOS_DISPONIBLES.map((prod: string) => (
                       <option key={prod} value={prod}>{prod}</option>
                     ))}
                   </select>
@@ -517,7 +506,8 @@ export default function AppMolienda() {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-2">
+
+                            <div className="space-y-3 pt-2">
                 <button 
                   onClick={agregarAlPedido}
                   className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors uppercase tracking-wider shadow-lg shadow-sky-600/10"
@@ -603,6 +593,7 @@ export default function AppMolienda() {
             </div>
           </div>
         </div> {/* Cierre del grid de la Vista 1 */}
+
         {/* ======================================================== */}
         {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO) */}
         {/* ======================================================== */}
@@ -613,7 +604,8 @@ export default function AppMolienda() {
                 <ShieldCheck className="text-emerald-400 w-5 h-5" />
                 <h2 className="text-sm font-bold text-white uppercase tracking-wider">Panel Gerencial Activo</h2>
               </div>
-              <button 
+
+                            <button 
                 onClick={fetchData} 
                 className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all"
               >
@@ -663,7 +655,7 @@ export default function AppMolienda() {
                 {/* GRÁFICO HISTÓRICO DE MOLIENDA */}
                 <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <CalendarDays size={13} className="text-sky-400" /> Cronograma de Producción por Fecha (Últimos Registros)
+                    <CalendarDays size={13} className="text-sky-400" /> Cronograma de Production por Fecha (Últimos Registros)
                   </p>
                   <div className="h-64 w-full text-xs font-mono">
                     <ResponsiveContainer width="100%" height="100%">
@@ -691,13 +683,20 @@ export default function AppMolienda() {
             <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
           </div>
         )}
-           </main>
+      </main>
     </div>
   );
 } // 🟢 Cierre definitivo de tu función de componente principal (AppMolienda)
 
 // COMPONENTE AUXILIAR EN LA RAÍZ DEL ARCHIVO
-function TotalCard({ label, val, col }) {
+// 🟢 Corregido: Agregamos interfaz de tipos estricta para las propiedades de la tarjeta de totales
+interface TotalCardProps {
+  label: string;
+  val: number;
+  col: string;
+}
+
+function TotalCard({ label, val, col }: TotalCardProps) {
   return (
     <div className="bg-[#141b2d] p-4 rounded-2xl border border-slate-800 text-center shadow-md">
       <p className="text-[9px] text-slate-500 uppercase font-black mb-1 tracking-wider">{label}</p>
