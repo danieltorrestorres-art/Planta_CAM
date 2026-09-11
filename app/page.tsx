@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Settings, Trash2, CalendarDays, Hammer, Package, AlertTriangle, ShoppingCart, Copy, Check, Send, Lock, LogOut, ShieldCheck } from 'lucide-react';
 
-const SHEET_URL = "https://google.com";
-const CLIENTES_SHEET_URL = "https://google.com";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pubhtml?gid=2047349943&single=true";
+const CLIENTES_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pubhtml?gid=209700947&single=true";
 
 // Clave de prueba para la vista de gerencia
 const PIN_GERENCIA = "1234";
