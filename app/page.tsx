@@ -439,34 +439,66 @@ export default function AppMolienda() {
 
 
 
-            <div className="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-4">
-              <p className="text-[11px] font-bold text-blue-400 uppercase">Agregar Producto al Pedido</p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-1">
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Producto</label>
-                  <select 
-                    value={productoSeleccionado}
-                    onChange={(e) => setProductoSeleccionado(e.target.value)}
-                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                  >
-                    {PRODUCTOS_DISPONIBLES.map((prod) => (
-                      <option key={prod} value={prod}>{prod}</option>
-                    ))}
-                  </select>
-                </div>
+          <div className="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-4">
+  <p className="text-[11px] font-bold text-blue-400 uppercase">Agregar Producto al Pedido</p>
+  
+  {/* Cambiado a grid-cols-4 en pantallas sm para dar espacio al precio */}
+  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+    <div className="sm:col-span-1">
+      <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Producto</label>
+      <select 
+        value={productoSeleccionado}
+        onChange={(e) => setProductoSeleccionado(e.target.value)}
+        className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+      >
+        {PRODUCTOS_DISPONIBLES.map((prod) => (
+          <option key={prod} value={prod}>{prod}</option>
+        ))}
+      </select>
+    </div>
 
-                <div>
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Cantidad (Tn)</label>
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    value={cantidad}
-                    onChange={(e) => setCantidad(e.target.value)}
-                    placeholder="0.0" 
-                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
+    <div>
+      <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Cantidad (Tn)</label>
+      <input 
+        type="number" 
+        step="0.1"
+        value={cantidad}
+        onChange={(e) => setCantidad(e.target.value)}
+        placeholder="0.0" 
+        className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+      />
+    </div>
+
+    {/* 🟢 NUEVO INPUT: PRECIO POR TONELADA CON DETALLE EN VERDE */}
+    <div>
+      <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Precio Unitario ($)</label>
+      <input 
+        type="number" 
+        step="0.01"
+        value={precioUnitario}
+        onChange={(e) => setPrecioUnitario(e.target.value)}
+        placeholder="Precio libre" 
+        className="w-full bg-[#0a0f1c] border border-y-slate-700 border-r-slate-700 border-l-4 border-l-green-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-green-500"
+      />
+    </div>
+
+    {/* Nota: Si tenías el selector de Empaque o el botón dentro de este grid, 
+        quedará en la 4ta columna de forma automática y alineada */}
+  </div>
+</div>
+
+{/* NUEVO INPUT: PRECIO POR TONELADA */}
+<div className="mb-3">
+  <label className="block text-[px] font-bold text-gray-400 uppercase mb-1">Precio por Tonelada ($ USD)</label>
+  <input 
+    type="number" 
+    step="0.01"
+    className="w-full p-3 bg-[#] text-white border border-l-4 border-l-green-500 border-y-gray-800 border-r-gray-800 rounded-lg outline-none font-medium" 
+    placeholder="Monto negociado libre" 
+    value={precioUnitario} 
+    onChange={(e) => setPrecioUnitario(e.target.value)} 
+  />
+</div>
 
                 <div>
                   <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Presentación</label>
