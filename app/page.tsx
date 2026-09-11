@@ -110,6 +110,7 @@ export default function AppMolienda() {
   const [notas, setNotas] = useState('');
   const [carrito, setCarrito] = useState([]);
   const [copiado, setCopiado] = useState(false);
+   const [precioUnitario, setPrecioUnitario] = useState('');
 
   const fetchData = async () => {
     try {
@@ -205,7 +206,7 @@ export default function AppMolienda() {
 
     const cantidadNum = parseFloat(cantidad);
     const precioNum = parseFloat(precioUnitario);
-    const [precioUnitario, setPrecioUnitario] = useState('');
+   
 
     setCarrito([...carrito, { 
       producto: productoSeleccionado, 
