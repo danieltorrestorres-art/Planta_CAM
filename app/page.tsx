@@ -338,6 +338,7 @@ export default function AppMolienda() {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-[#0a0f1c] text-slate-100 p-3 md:p-6 font-sans">
       
@@ -637,18 +638,32 @@ export default function AppMolienda() {
 
 
               <button 
-               // Cambia la línea 640 para que quede exactamente así:
-onClick={procesarYCopiarPedido}
+  onClick={procesarYCopiarPedido}
+  disabled={carrito.length === 0 || procesandoPedido}
+  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md w-full ${
+    carrito.length > 0 
+      ? 'bg-green-600 hover:bg-green-500 text-white shadow-green-600/10' 
+      : 'bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed'
+  }`}
+>
+  {procesandoPedido ? (
+    <>
+      <Send size={14} className="animate-spin" />
+      <span>Procesando...</span>
+    </>
+  ) : copiado ? (
+    <>
+      <Check size={14} />
+      <span>¡Pedido Guardado!</span>
+    </>
+  ) : (
+    <>
+      <Send size={14} />
+      <span>Procesar y Guardar Pedido</span>
+    </>
+  )}
+</button>
 
-                disabled={carrito.length === 0}
-                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md ${
-                  carrito.length > 0 
-                    ? 'bg-green-600 hover:bg-green-500 text-white shadow-green-600/10' 
-                    : 'bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed'
-                }`}
-              >
-                <Send size={14} /> Enviar WhatsApp
-              </button>
             </div>
           </div>
         </div> {/* Cierre del grid de la Vista 1 */}
