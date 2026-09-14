@@ -98,6 +98,7 @@ export default function AppMolienda() {
   // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
   const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
+  const [procesandoPedido, setProcesandoPedido] = useState(false);
   const [precioUnitario, setPrecioUnitario] = useState('');
 
   const fetchData = async () => {
@@ -269,19 +270,60 @@ export default function AppMolienda() {
     return txt;
   };
 
-  const copiarAlPortapapeles = () => {
-    const texto = generarTextoWhatsApp();
-    navigator.clipboard.writeText(texto).then(() => {
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    });
+  const procesarYCopiarPedido = async () => {
+  if (carrito.length === 0) return;
+  if (!cliente) {
+    alert("Por favor, ingresa el nombre del cliente para registrar el pedido.");
+    return;
+  }
+
+  setProcesandoPedido(true);
+
+  // 1. Calcula el Total General en USD sumando el carrito con sus precios negociados
+  const totalGeneralCalculado = carrito.reduce((acc, item) => acc + (item.cantidad * (parseFloat(item.precio) || 0)), 0);
+
+  // 2. Prepara los datos exactos para el backend unificado del Sheets
+  const payload = {
+    operacion: "REGISTRAR_PEDIDO",
+    cliente: cliente,
+    vendedor: "Vendedor Planta", // Puedes cambiarlo por una variable si manejas nombres de vendedores
+    totalGeneral: totalGeneralCalculado,
+    items: carrito.map(item => ({
+      producto: item.producto,
+      cantidad: item.cantidad,
+      precio: parseFloat(item.precio) || 0
+    }))
   };
 
-  const enviarPorWhatsApp = () => {
-    const texto = encodeURIComponent(generarTextoWhatsApp());
-    // 🟢 Corregido: Se reparó el enlace nativo wa.me para la API móvil de WhatsApp
-    window.open(`https://wa.me{telefonoCliente || ''}?text=${texto}`, '_blank');
-  };
+  try {
+    // 3. Envío silencioso y seguro a la pestaña "Historial_Pedidos"
+    await fetch(SHEET_URL, { // <--- Usamos tu variable SHEET_URL que ya tienes declarada arriba
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error("Error al registrar en el historial, pero se procederá con la copia:", error);
+  }
+
+  // 4. Copia el texto formateado con asteriscos directo al portapapeles
+  const texto = generarTextoWhatsApp();
+  navigator.clipboard.writeText(texto).then(() => {
+    setCopiado(true);
+    setProcesandoPedido(false);
+    
+    // 5. Limpieza automática del formulario para el próximo cliente
+    setCarrito([]);
+    setCliente('');
+    if (setTelefonoCliente) setTelefonoCliente('');
+    if (setRifCliente) setRifCliente(''); // Limpia el RIF si usas ese estado
+    if (setNotas) setNotas(''); // Limpia las notas si usas ese estado
+    
+    setTimeout(() => setCopiado(false), 3000);
+  });
+};
+
 
   // 🟢 Corregido: Se tipó el parámetro de entrada de la función como string
   const manejarSeleccionCliente = (nombreSeleccionado: string) => {
@@ -566,21 +608,38 @@ export default function AppMolienda() {
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <button 
-                onClick={copiarAlPortapapeles}
-                disabled={carrito.length === 0}
-                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md ${
-                  copiado 
-                    ? 'bg-emerald-600 text-white shadow-emerald-600/10' 
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed'
-                }`}
-              >
-                {copiado ? <Check size={14} /> : <Copy size={14} />}
-                {copiado ? '¡Copiado!' : 'Copiar Texto'}
-              </button>
+           <button 
+  onClick={procesarYCopiarPedido}
+  disabled={carrito.length === 0 || procesandoPedido}
+  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md ${
+    copiado 
+      ? 'bg-emerald-600 text-white shadow-emerald-600/10' 
+      : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed'
+  }`}
+>
+  {procesandoPedido ? (
+    <>
+      <Send size={14} className="animate-spin" />
+      <span>Guardando Pedido...</span>
+    </>
+  ) : copiado ? (
+    <>
+      <Check size={14} />
+      <span>¡Pedido Guardado y Copiado!</span>
+    </>
+  ) : (
+    <>
+      <Copy size={14} />
+      <span>Procesar y Copiar Pedido</span>
+    </>
+  )}
+</button>
+
 
               <button 
-                onClick={enviarPorWhatsApp}
+               // Cambia la línea 640 para que quede exactamente así:
+onClick={procesarYCopiarPedido}
+
                 disabled={carrito.length === 0}
                 className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md ${
                   carrito.length > 0 
