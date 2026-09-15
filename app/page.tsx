@@ -89,6 +89,7 @@ export default function AppMolienda() {
   const [monthlyTotals, setMonthlyTotals] = useState({ produccion: 0, merma: 0 });
 
   // ESTADOS DEL SISTEMA DE VENTAS / PEDIDOS
+  const [vendedorInput, setVendedorInput] = useState('');
   const [cliente, setCliente] = useState('');
   const [telefonoCliente, setTelefonoCliente] = useState('');
   const [productoSeleccionado, setProductoSeleccionado] = useState(PRODUCTOS_DISPONIBLES[0]);
@@ -311,7 +312,7 @@ export default function AppMolienda() {
     const payload = {
       operacion: "REGISTRAR_PEDIDO",
       cliente: cliente,
-      vendedor: "Vendedor Planta",
+      vendedor: vendedorInput || "Vendedor General",
       totalGeneral: totalGeneralCalculado,
       items: carrito.map(item => ({
         producto: item.producto || item.nombre,
@@ -467,6 +468,17 @@ export default function AppMolienda() {
 
 
                        {/* SECCIÓN DATOS CLIENTE */}
+                           <div className="mb-4">
+                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Nombre del Vendedor</label>
+                <input 
+                  type="text"
+                  value={vendedorInput}
+                  onChange={(e) => setVendedorInput(e.target.value)}
+                  placeholder="Ej: Daniel Torres"
+                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+          
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1c]/50 p-3 rounded-xl border border-slate-800/40">
               <div>
                 <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
