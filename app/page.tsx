@@ -281,6 +281,28 @@ export default function AppMolienda() {
       alert("Por favor, ingresa el nombre del cliente para registrar el pedido.");
       return;
     }
+  // ==============================================================================
+  // FUNCIÓN INTELIGENTE DE SELECCIÓN DE CLIENTE
+  // ==============================================================================
+    // ==============================================================================
+  // ASIGNACIÓN INTELIGENTE DE CLIENTE Y AUTOCOMPLETADO DE RIF
+  // ==============================================================================
+  const manejarSeleccionCliente = (valor: string) => {
+    setCliente(valor);
+
+    // Si tu aplicación cuenta con un array global de datos de clientes (ej: listaClientes)
+    if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+      const coincidencia = listaClientes.find(
+        (c) => c.nombre.toLowerCase() === valor.toLowerCase()
+      );
+      if (coincidencia) {
+        // Rellena automáticamente los campos si las funciones de estado existen
+        if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
+        if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
+      }
+    }
+  };
+
 
     setProcesandoPedido(true);
 
@@ -452,7 +474,21 @@ export default function AppMolienda() {
                   type="text"
                   list="clientes-sugeridos"
                   value={cliente}
-                  onChange={(e) => manejarSeleccionCliente(e.target.value)}
+                                    onChange={(e) => {
+                    const valor = e.target.value;
+                    setCliente(valor);
+                    
+                    // Buscamos si el cliente existe en tu lista para traer su RIF automáticamente
+                    if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                      const coincidencia = listaClientes.find(
+                        (c) => c.nombre.toLowerCase() === valor.toLowerCase()
+                      );
+                      if (coincidencia && coincidencia.rif && typeof setRifCliente === 'function') {
+                        setRifCliente(coincidencia.rif);
+                      }
+                    }
+                  }}
+
                   placeholder="Escribe o selecciona..."
                   className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                 />
@@ -474,16 +510,17 @@ export default function AppMolienda() {
                 />
               </div>
 
-              <div>
+                            <div>
                 <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Teléfono Móvil</label>
                 <input 
                   type="text"
                   value={telefonoCliente}
                   onChange={(e) => setTelefonoCliente(e.target.value)}
-                  placeholder="58414XXXXXXX"
+                  placeholder="04XX-XXXXXXX"
                   className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                 />
               </div>
+
             </div>
 
             {/* SECCIÓN AGREGAR ÍTEM */}
