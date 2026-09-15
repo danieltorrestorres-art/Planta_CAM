@@ -244,25 +244,27 @@ export default function AppMolienda() {
 
   const totalGeneralPedido = carrito.reduce((acc, item) => acc + (item.subtotal || 0), 0);
 
-  // 5. INTELIGENCIA COMERCIAL Y WHATSAPP
+   // ==============================================================================
+  // INTELIGENCIA COMERCIAL Y WHATSAPP
+  // ==============================================================================
   const generarTextoWhatsApp = () => {
     const fecha = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
     let txt = `*NUEVO PEDIDO DE MOLIENDA*\n`;
     txt += `📅 *Fecha:* ${fecha}\n`;
     txt += `👤 *Cliente:* ${cliente || 'No especificado'}\n`;
-    if (rifCliente) txt += `🆔 *RIF:* ${rifCliente}\n`;
-    if (telefonoCliente) txt += `📞 *Teléfono:* ${telefonoCliente}\n`;
+    if (typeof rifCliente !== 'undefined' && rifCliente) txt += `🆔 *RIF:* ${rifCliente}\n`;
+    if (typeof telefonoCliente !== 'undefined' && telefonoCliente) txt += `📞 *Teléfono:* ${telefonoCliente}\n`;
     txt += `-----------------------------------\n`;
     txt += `📦 *DETALLE DEL PEDIDO:*\n`;
     
     carrito.forEach((item, idx) => {
-      txt += `${idx + 1}. *${item.producto}* - ${item.cantidad} Tn (${item.empaque}) a $${item.precio.toFixed(2)}/Tn -> *$${item.subtotal.toFixed(2)}*\n`;
+      txt += `${idx + 1}. *${item.producto}* - ${item.cantidad} Tn (${item.empaque || 'Sacos'}) a $${(item.precio || 0).toFixed(2)}/Tn -> *$${(item.subtotal || 0).toFixed(2)}*\n`;
     });
 
     txt += `-----------------------------------\n`;
-    txt += `💰 *TOTAL GENERAL:* *$${totalGeneralPedido.toFixed(2)} USD*\n`;
+    txt += `💰 *TOTAL GENERAL:* *$${(typeof totalGeneralPedido !== 'undefined' ? totalGeneralPedido : 0).toFixed(2)} USD*\n`;
 
-    if (notas) {
+    if (typeof notas !== 'undefined' && notas) {
       txt += `-----------------------------------\n`;
       txt += `📝 *Notas:* ${notas}\n`;
     }
@@ -270,76 +272,68 @@ export default function AppMolienda() {
     return txt;
   };
 
+  // ==============================================================================
+  // FUNCIÓN INTELIGENTE DE GUARDADO EN EXCEL Y COPIADO AL PORTAPAPELES
+  // ==============================================================================
   const procesarYCopiarPedido = async () => {
-  if (carrito.length === 0) return;
-  if (!cliente) {
-    alert("Por favor, ingresa el nombre del cliente para registrar el pedido.");
-    return;
-  }
-
-  setProcesandoPedido(true);
-
-  // 1. Calcula el Total General en USD sumando el carrito con sus precios negociados
-  const totalGeneralCalculado = carrito.reduce((acc, item) => acc + (item.cantidad * (parseFloat(item.precio) || 0)), 0);
-
-  // 2. Prepara los datos exactos para el backend unificado del Sheets
-  const payload = {
-    operacion: "REGISTRAR_PEDIDO",
-    cliente: cliente,
-    vendedor: "Vendedor Planta", // Puedes cambiarlo por una variable si manejas nombres de vendedores
-    totalGeneral: totalGeneralCalculado,
-    items: carrito.map(item => ({
-      producto: item.producto,
-      cantidad: item.cantidad,
-      precio: parseFloat(item.precio) || 0
-    }))
-  };
-
-  try {
-    // 3. Envío silencioso y seguro a la pestaña "Historial_Pedidos"
-    await fetch(SHEET_URL, { // <--- Usamos tu variable SHEET_URL que ya tienes declarada arriba
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    });
-  } catch (error) {
-    console.error("Error al registrar en el historial, pero se procederá con la copia:", error);
-  }
-
-  // 4. Copia el texto formateado con asteriscos directo al portapapeles
-  const texto = generarTextoWhatsApp();
-  navigator.clipboard.writeText(texto).then(() => {
-    setCopiado(true);
-    setProcesandoPedido(false);
-    
-    // 5. Limpieza automática del formulario para el próximo cliente
-    setCarrito([]);
-    setCliente('');
-    if (setTelefonoCliente) setTelefonoCliente('');
-    if (setRifCliente) setRifCliente(''); // Limpia el RIF si usas ese estado
-    if (setNotas) setNotas(''); // Limpia las notas si usas ese estado
-    
-    setTimeout(() => setCopiado(false), 3000);
-  });
-};
-
-
-  // 🟢 Corregido: Se tipó el parámetro de entrada de la función como string
-  const manejarSeleccionCliente = (nombreSeleccionado: string) => {
-    setCliente(nombreSeleccionado);
-    const encontrado = listaClientes.find(c => c.nombre === nombreSeleccionado);
-    if (encontrado) {
-      setRifCliente(encontrado.rif);
-      setTelefonoCliente(encontrado.telefono);
-    } else {
-      setRifCliente('');
-      setTelefonoCliente('');
+    if (carrito.length === 0) return;
+    if (!cliente) {
+      alert("Por favor, ingresa el nombre del cliente para registrar el pedido.");
+      return;
     }
+
+    setProcesandoPedido(true);
+
+    const totalGeneralCalculado = carrito.reduce((acc, item) => acc + (item.cantidad * (parseFloat(item.precio) || 0)), 0);
+
+    const payload = {
+      operacion: "REGISTRAR_PEDIDO",
+      cliente: cliente,
+      vendedor: "Vendedor Planta",
+      totalGeneral: totalGeneralCalculado,
+      items: carrito.map(item => ({
+        producto: item.producto || item.nombre,
+        cantidad: item.cantidad,
+        precio: parseFloat(item.precio) || 0
+      }))
+    };
+
+    try {
+      const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxFNR3B8DqlwF_xvQBrqwsDsf5c_T3b9QWFeRhn5D1yjrq8kmeClNCBbMkN8RPy9H-1QQ/exec";
+
+      await fetch(WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
+      console.log("Pedido guardado exitosamente en el historial del Sheets");
+    } catch (error) {
+      console.error("Error al registrar en el historial:", error);
+    }
+
+    const texto = generarTextoWhatsApp();
+    navigator.clipboard.writeText(texto).then(() => {
+      setCopiado(true);
+      setProcesandoPedido(false);
+      
+      setCarrito([]);
+      setCliente('');
+      if (typeof setTelefonoCliente === 'function') setTelefonoCliente('');
+      if (typeof setRifCliente === 'function') setRifCliente('');
+      if (typeof setNotas === 'function') setNotas('');
+      
+      setTimeout(() => setCopiado(false), 3000);
+    });
   };
+
+  // ==============================================================================
+  // FIN DE LOGICA - ABAJO COMIENZA EL RETURN
+  // ==============================================================================
 
 
   return (
+    
     <div className="min-h-screen bg-[#0a0f1c] text-slate-100 p-3 md:p-6 font-sans">
       
       {/* HEADER CORPORATIVO */}
@@ -552,124 +546,93 @@ export default function AppMolienda() {
 
                             <div className="space-y-3 pt-2">
                 <button 
-                  onClick={agregarAlPedido}
-                  className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors uppercase tracking-wider shadow-lg shadow-sky-600/10"
-                >
-                  + Añadir al Pedido
-                </button>
+                   onClick={agregarAlPedido}
+                className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors uppercase tracking-wider shadow-lg shadow-sky-600/10"
+              >
+                + Añadir al Pedido
+              </button>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
-                  <textarea 
-                    value={notas}
-                    onChange={(e) => setNotas(e.target.value)}
-                    placeholder="Ej: Despachar antes de las 2:00 PM"
-                    className="w-full h-16 bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 resize-none"
-                  />
-                </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
+                <textarea 
+                  value={notas}
+                  onChange={(e) => setNotas(e.target.value)}
+                  placeholder="Ej: Despachar antes de las 2:00 PM"
+                  className="w-full h-16 bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 resize-none"
+                />
               </div>
             </div>
-            
-            {carrito.length > 0 && (
-              <button
-                onClick={() => setCarrito([])}
-                className="flex items-center gap-1.5 ml-auto text-[10px] text-slate-500 hover:text-rose-400 transition-colors uppercase font-bold"
-              >
-                <Trash2 size={12} /> Limpiar Todo el Pedido
-              </button>
-            )}
           </div>
+          
+          {carrito.length > 0 && (
+            <button
+              onClick={() => setCarrito([])}
+              className="flex items-center gap-1.5 ml-auto text-[10px] text-slate-500 hover:text-rose-400 transition-colors uppercase font-bold"
+            >
+              <Trash2 size={12} /> Limpiar Todo el Pedido
+            </button>
+          )}
+        </div>
 
-          {/* VISTA PREVIA Y ACCIONES (COLUMNA DERECHA) */}
-          <div className="lg:col-span-5 flex flex-col justify-between bg-[#0a0f1c] p-5 rounded-2xl border border-slate-800">
-            <div>
-              <div className="flex justify-between items-center mb-3 border-b border-slate-800/60 pb-2">
-                <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                  <Package size={13} className="text-sky-400" /> Resumen para WhatsApp
-                </span>
-                <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded-md border border-sky-900/30">
-                  {carrito.length} Ítem(s)
-                </span>
-              </div>
+        {/* VISTA PREVIA Y ACCIONES (COLUMNA DERECHA) */}
+        <div className="lg:col-span-5 flex flex-col justify-between bg-[#0a0f1c] p-5 rounded-2xl border border-slate-800">
+          <div>
+            <div className="flex justify-between items-center mb-3 border-b border-slate-800/60 pb-2">
+              <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Package size={13} className="text-sky-400" /> Resumen para WhatsApp
+              </span>
+              <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded-md border border-sky-900/30">
+                {carrito.length} Ítem(s)
+              </span>
+            </div>
 
-              <div className="bg-[#111622] p-4 rounded-xl border border-slate-800/80 text-xs font-mono text-slate-300 min-h-[180px] whitespace-pre-wrap leading-relaxed shadow-inner">
-                {carrito.length === 0 ? (
-                  <span className="text-slate-600 italic block text-center pt-12">Agrega productos para estructurar la cotización...</span>
-                ) : (
-                  generarTextoWhatsApp()
-                )}
-              </div>
-
-              {carrito.length > 0 && (
-                <div className="mt-4 mb-2 flex justify-between items-center px-2 bg-slate-900/30 p-2.5 rounded-xl border border-slate-800/40">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Cotizado ($):</span>
-                  <span className="text-base font-black text-emerald-400">${totalGeneralPedido.toFixed(2)} USD</span>
-                </div>
+            <div className="bg-[#111622] p-4 rounded-xl border border-slate-800/80 text-xs font-mono text-slate-300 min-h-[180px] whitespace-pre-wrap leading-relaxed shadow-inner">
+              {carrito.length === 0 ? (
+                <span className="text-slate-600 italic block text-center pt-12">Agrega productos para estructurar la cotización...</span>
+              ) : (
+                generarTextoWhatsApp()
               )}
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-           <button 
-  onClick={procesarYCopiarPedido}
-  disabled={carrito.length === 0 || procesandoPedido}
-  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md ${
-    copiado 
-      ? 'bg-emerald-600 text-white shadow-emerald-600/10' 
-      : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed'
-  }`}
->
-  {procesandoPedido ? (
-    <>
-      <Send size={14} className="animate-spin" />
-      <span>Guardando Pedido...</span>
-    </>
-  ) : copiado ? (
-    <>
-      <Check size={14} />
-      <span>¡Pedido Guardado y Copiado!</span>
-    </>
-  ) : (
-    <>
-      <Copy size={14} />
-      <span>Procesar y Copiar Pedido</span>
-    </>
-  )}
-</button>
-
-
-              <button 
-  onClick={procesarYCopiarPedido}
-  disabled={carrito.length === 0 || procesandoPedido}
-  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md w-full ${
-    carrito.length > 0 
-      ? 'bg-green-600 hover:bg-green-500 text-white shadow-green-600/10' 
-      : 'bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed'
-  }`}
->
-  {procesandoPedido ? (
-    <>
-      <Send size={14} className="animate-spin" />
-      <span>Procesando...</span>
-    </>
-  ) : copiado ? (
-    <>
-      <Check size={14} />
-      <span>¡Pedido Guardado!</span>
-    </>
-  ) : (
-    <>
-      <Send size={14} />
-      <span>Procesar y Guardar Pedido</span>
-    </>
-  )}
-</button>
-
-            </div>
+            {carrito.length > 0 && (
+              <div className="mt-4 mb-2 flex justify-between items-center px-2 bg-slate-900/30 p-2.5 rounded-xl border border-slate-800/40">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Cotizado ($):</span>
+                <span className="text-base font-black text-emerald-400">${totalGeneralPedido.toFixed(2)} USD</span>
+              </div>
+            )}
           </div>
-        </div> {/* Cierre del grid de la Vista 1 */}
 
-        {/* ======================================================== */}
-        {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO) */}
+                    <div className="mt-4">
+            <button 
+              onClick={procesarYCopiarPedido}
+              disabled={carrito.length === 0 || procesandoPedido}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md w-full ${
+                copiado 
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/10' 
+                  : 'bg-green-600 hover:bg-green-500 text-white disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+            >
+              {procesandoPedido ? (
+                <span className="flex items-center gap-2">
+                  <Send size={14} className="animate-spin" /> Procesando...
+                </span>
+              ) : copiado ? (
+                <span className="flex items-center gap-2">
+                  <Check size={14} /> ¡Pedido Guardado!
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Send size={14} /> Procesar y Guardar Pedido
+                </span>
+              )}
+            </button>
+          </div>
+
+        
+      </div> 
+    </div> 
+
+        {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO)*/}
         {/* ======================================================== */}
         {esGerente ? (
           <div className="space-y-6 pt-4 animate-fade-in">
