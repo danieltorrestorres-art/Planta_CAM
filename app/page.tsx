@@ -86,8 +86,6 @@ export default function AppMolienda() {
   const [inventory, setInventory] = useState({ pol: 0, pap: 0, big: 0 });
   const [totals, setTotals] = useState({ c: 0, y: 0, c200: 0, c400G: 0, c400B: 0, merma: 0, desp: 0, maqAcumulada: 0 });
   const [monthlyTotals, setMonthlyTotals] = useState({ produccion: 0, merma: 0 });
-const [loadingHistorial, setLoadingHistorial] = useState<boolean>(false);
-const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
 
   // ESTADOS DEL SISTEMA DE VENTAS / PEDIDOS
   const [vendedorInput, setVendedorInput] = useState('');
@@ -97,15 +95,11 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
-  const [datosHistorial, setDatosHistorial] = useState([]);
   // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
   const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
   const [procesandoPedido, setProcesandoPedido] = useState(false);
   const [precioUnitario, setPrecioUnitario] = useState('');
-    const [montoTotalFacturado, setMontoTotalFacturado] = useState<number>(0);
-  const [ordenesProcesadas, setOrdenesProcesadas] = useState<number>(0);
-  const [ticketPromedio, setTicketPromedio] = useState<number>(0);
 
   const fetchData = async () => {
     try {
@@ -113,12 +107,10 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
       const response = await fetch(`${SHEET_URL}&t=${Date.now()}`);
       if (!response.ok) throw new Error("No se pudo obtener la información de Google Sheets");
 
-      const text = await response.text();
+            const text = await response.text();
       const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
 
-      // Si por alguna razón la respuesta viene vacía, no borramos lo que ya está en pantalla
-      if (rows.length <= 1) return;
-
+      // 🟢 Corregido: Se tipó el objeto de mapeo para evitar restricciones estrictas de tipado dinámico
       const dailyMap: Record<string, any> = {};
       let tc = 0, ty = 0, t200 = 0, t400g = 0, t400b = 0, tm = 0, td = 0, tmaq = 0;
       let mProd = 0, mMerma = 0;
@@ -128,27 +120,28 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
+      // 🟢 Saneado: Unificamos y cerramos un solo ciclo for matemático sin códigos duplicados huérfanos
       for (let i = 1; i < rows.length; i++) {
-        // Usamos tu procesador nativo de líneas
         const cols = parseCSVLine(rows[i]);
-        if (!cols || cols.length === 0) continue; // 🟢 PROTECCIÓN: Si la línea está rota, la salta y no rompe el loop
         
-        // Validación segura de índices para evitar caídas catastróficas
-        if (cols[11] && cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
-        if (cols[12] && cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
-        if (cols[13] && cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
+        // Asignamos los índices reales de las columnas para los sacos
+        if (cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
+        if (cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
+        if (cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
 
+        // Extraemos la fecha de la primera columna (índice 0)
         const fechaStr = cols[0]?.trim();
         
         if (fechaStr && fechaStr.length > 5) {
-          const vC = cols[1] ? cleanNum(cols[1]) : 0;
-          const vY = cols[2] ? cleanNum(cols[2]) : 0;
-          const v200 = cols[3] ? cleanNum(cols[3]) : 0;
-          const v400g = cols[4] ? cleanNum(cols[4]) : 0;
-          const v400b = cols[5] ? cleanNum(cols[5]) : 0;
-          const vDesp = cols[6] ? cleanNum(cols[6]) : 0;
-          const vM = cols[7] ? cleanNum(cols[7]) : 0;
-          const vMaquila = cols[14] ? cleanNum(cols[14]) : 0;
+          // Asignamos los índices correctos para la producción diaria
+          const vC = cleanNum(cols[1]);
+          const vY = cleanNum(cols[2]);
+          const v200 = cleanNum(cols[3]);
+          const v400g = cleanNum(cols[4]);
+          const v400b = cleanNum(cols[5]);
+          const vDesp = cleanNum(cols[6]);
+          const vM = cleanNum(cols[7]);
+          const vMaquila = cleanNum(cols[14]);
 
           tc += vC; ty += vY; t200 += v200; t400g += v400g; t400b += v400b; td += vDesp; tm += vM;
           tmaq += vMaquila;
@@ -173,15 +166,12 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
         }
       }
 
-      // 🟢 SOLO ACTUALIZAMOS SI EL MAPA GENERÓ DATOS REALES
-      const finalData = Object.values(dailyMap);
-      if (finalData.length > 0) {
-        setData(finalData);
-        setTotals({ c: tc, y: ty, c200: t200, c400G: t400g, c400B: t400b, merma: tm, desp: td, maqAcumulada: tmaq });
-        setMonthlyTotals({ produccion: mProd, merma: mMerma });
-        setInventory({ pol: lastPol, pap: lastPap, big: lastBig });
-      }
+      setData(Object.values(dailyMap));
+      setTotals({ c: tc, y: ty, c200: t200, c400G: t400g, c400B: t400b, merma: tm, desp: td, maqAcumulada: tmaq });
+      setMonthlyTotals({ produccion: mProd, merma: mMerma });
+      setInventory({ pol: lastPol, pap: lastPap, big: lastBig });
     } catch (e) {
+      // 🟢 Corregido: Validación nativa estricta de catch para TypeScript en Vercel
       if (e instanceof Error) {
         setError(e.message);
       } else {
@@ -191,7 +181,6 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
       setLoading(false);
     }
   };
-
 
   // 1. SINCRONIZACIÓN DE DATOS DIARIOS
   useEffect(() => { 
@@ -203,9 +192,6 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ORIGINAL RESTAURADO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ENLACE DIRECTO FIJO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-    // ==========================================
-  // 1. CARGA DE CLIENTES (Tu bloque existente)
-  // ==========================================
   useEffect(() => {
     fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
       .then(res => {
@@ -216,6 +202,7 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
         const parsed = rows.slice(1).map(row => {
           const cols = row.split(',');
+          // 🟢 PROTECCIÓN DE TIPADO: Aseguramos que si viene una celda vacía no rompa el Fetch
           return {
             nombre: cols[0] ? String(cols[0]).replace(/"/g, '').trim() : '',
             rif: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
@@ -226,87 +213,6 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
       })
       .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
   }, []);
-
-  // ==========================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (El nuevo bloque)
-  // ==========================================
-    // ==========================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (URL Real Sincronizada)
-  // ==========================================
-    // ==========================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y Seguro)
-  // ==========================================
-    // =========================================================
-  // NUEVO BLOQUE DE HISTORIAL: TOTALMENTE AISLADO Y SEGURO
-  // =========================================================
-    // ==========================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (Con Seguro Anti-Fallo Inicial)
-  // ==========================================
-  useEffect(() => {
-    const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
-
-    const cargarHistorialPedidos = async () => {
-      // 🟢 PROTECCIÓN: Si la URL está corrupta o vacía por un retraso del componente, frena el flujo
-      if (!URL_HISTORIAL_CSV || URL_HISTORIAL_CSV.includes("undefined")) {
-        return; 
-      }
-
-      try {
-        setLoadingHistorial(true);
-        setErrorHistorial(null);
-
-        const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv");
-        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
-        
-        const text = await res.text();
-        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
-        
-        if (rows.length <= 1) {
-          setDatosHistorial([]);
-          setMontoTotalFacturado(0);
-          setOrdenesProcesadas(0);
-          setTicketPromedio(0);
-          return;
-        }
-
-        const parsedData = rows.slice(1).map((row) => {
-          const cols = row.split(',');
-          const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
-
-          const rawPrecio = clean(cols[5]);
-          const precioLimpio = rawPrecio.replace(/[\$\s]/g, '').replace(/,/g, '.');
-
-          return {
-            id: clean(cols[0]),
-            fecha: clean(cols[1]),
-            cliente: clean(cols[2]),
-            vendedor: clean(cols[3]),
-            productos: clean(cols[4]),
-            totalUsd: parseFloat(precioLimpio) || 0
-          };
-        });
-
-        const totalPedidos = parsedData.length;
-        const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
-        const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
-
-        setDatosHistorial(parsedData);
-        setMontoTotalFacturado(sumaFacturado);
-        setOrdenesProcesadas(totalPedidos);
-        setTicketPromedio(ticketPromedioCalc);
-        setErrorHistorial(null); // Limpiamos el error interno si todo sale bien
-
-      } catch (e: any) {
-        console.error("Error cargando historial desde la nube:", e);
-        // Almacenamos el error solo en el canal secundario para no tumbar la app
-        setErrorHistorial("Error al conectar con el servidor de pedidos");
-      } finally {
-        setLoadingHistorial(false);
-      }
-    };
-
-    cargarHistorialPedidos();
-  }, []); // Se ejecuta de forma segura al montar el componente
 
 
 
@@ -868,94 +774,22 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
                         <Bar dataKey="carb400G" name="400-G" stackId="a" fill="#f43f5e" />
                         <Bar dataKey="carb400B" name="400-B" stackId="a" fill="#10b981" />
                         <Bar dataKey="maquila" name="Maquila" stackId="a" fill="#8b5cf6" />
-                                         </BarChart>
-                  </ResponsiveContainer>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
-
-              {/* ======================================================== */}
-              {/* 🟢 SECCIÓN FINANCIERA Y HISTORIAL GERENCIAL COMERCIAL   */}
-              {/* ======================================================== */}
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* Tarjeta Verde: Monto Facturado */}
-                <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Monto Total Facturado</span>
-                  <span className="text-2xl font-black text-emerald-400 font-mono">
-                    ${(datosHistorial || []).reduce((acc: number, p: any) => acc + (parseFloat(p?.totalUSD) || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
-                  </span>
-                  <p className="text-[10px] text-slate-500 mt-2">Suma total de pedidos registrados en el sistema</p>
-                </div>
-
-                {/* Tarjeta: Conteo de Pedidos */}
-                <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Órdenes Procesadas</span>
-                  <span className="text-2xl font-black text-sky-400 font-mono">{(datosHistorial || []).length} Pedido(s)</span>
-                  <p className="text-[10px] text-slate-500 mt-2">Transacciones comerciales totales de la jornada</p>
-                </div>
-
-                {/* Tarjeta: Ticket Promedio */}
-                <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Ticket Promedio General</span>
-                  <span className="text-2xl font-black text-purple-400 font-mono">
-                    ${((datosHistorial || []).length > 0 
-                      ? (datosHistorial || []).reduce((acc: number, p: any) => acc + (parseFloat(p?.totalUSD) || 0), 0) / (datosHistorial || []).length 
-                      : 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
-                  </span>
-                  <p className="text-[10px] text-slate-500 mt-2">Valor medio estimado por orden de compra</p>
-                </div>
-              </div>
-
-              {/* TABLA DE MOVIMIENTOS HISTÓRICOS EN TIEMPO REAL */}
-              <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md mt-6">
-                <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider block mb-3">Últimas Órdenes en Tiempo Real</span>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-500 font-bold uppercase tracking-wider bg-slate-900/40">
-                        <th className="p-3">ID</th>
-                        <th className="p-3">Fecha</th>
-                        <th className="p-3">Cliente</th>
-                        <th className="p-3">Vendedor</th>
-                        <th className="p-3">Detalle</th>
-                        <th className="p-3 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(!datosHistorial || datosHistorial.length === 0) ? (
-                        <tr>
-                          <td colSpan={6} className="p-4 text-center italic text-slate-600">No hay registros de pedidos comerciales disponibles...</td>
-                        </tr>
-                      ) : (
-                        datosHistorial.map((p: any, index: number) => (
-                          <tr key={index} className="border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors">
-                            <td className="p-3 font-mono font-bold text-sky-400">{p?.idPedido || `P-${1000 + index}`}</td>
-                            <td className="p-3 text-slate-400">{p?.fecha}</td>
-                            <td className="p-3 font-bold text-slate-200 uppercase">{p?.cliente}</td>
-                            <td className="p-3 text-slate-300 font-medium">{p?.vendedor || "No asignado"}</td>
-                            <td className="p-3 text-slate-400 font-sans max-w-xs truncate">{p?.productos}</td>
-                            <td className="p-3 text-right font-mono font-bold text-emerald-400">${(parseFloat(p?.totalUSD) || 0).toFixed(2)}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto">
-          <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
-        </div>
-      )}
-    </main>
-  </div>
-);
-}
-
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto">
+            <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+} // 🟢 Cierre definitivo de tu función de componente principal (AppMolienda)
 
 // COMPONENTE AUXILIAR EN LA RAÍZ DEL ARCHIVO
 // 🟢 Corregido: Agregamos interfaz de tipos estricta para las propiedades de la tarjeta de totales
