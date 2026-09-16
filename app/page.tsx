@@ -86,6 +86,8 @@ export default function AppMolienda() {
   const [inventory, setInventory] = useState({ pol: 0, pap: 0, big: 0 });
   const [totals, setTotals] = useState({ c: 0, y: 0, c200: 0, c400G: 0, c400B: 0, merma: 0, desp: 0, maqAcumulada: 0 });
   const [monthlyTotals, setMonthlyTotals] = useState({ produccion: 0, merma: 0 });
+const [loadingHistorial, setLoadingHistorial] = useState<boolean>(false);
+const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
 
   // ESTADOS DEL SISTEMA DE VENTAS / PEDIDOS
   const [vendedorInput, setVendedorInput] = useState('');
@@ -230,15 +232,17 @@ export default function AppMolienda() {
     // ==========================================
   // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y Seguro)
   // ==========================================
+    // =========================================================
+  // NUEVO BLOQUE DE HISTORIAL: TOTALMENTE AISLADO Y SEGURO
+  // =========================================================
   useEffect(() => {
-    const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
-
     const cargarHistorialPedidos = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        // 🟢 Usamos variables internas propias para no tumbar la VISTA 1 de producción
+        // Cambia el URL si prefieres usar el formato directo que usas en clientes
+        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
 
-        const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv");
+        const res = await fetch(URL_HISTORIAL_CSV);
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
         
         const text = await res.text();
@@ -253,44 +257,42 @@ export default function AppMolienda() {
         }
 
         const parsedData = rows.slice(1).map((row) => {
-          // Separación simple por comas idéntica a tu bloque de clientes
           const cols = row.split(',');
-          
-          // Limpiador seguro para evitar que celdas vacías cuelguen el tipado
           const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
 
-          // Mapeo exacto basado en tus 6 columnas secuenciales
+          // 🟢 Filtra el texto monetario (elimina $, espacios y ajusta decimales) antes de sumarlo
+          const rawPrecio = clean(cols[5]);
+          const precioLimpio = rawPrecio.replace(/[\$\s]/g, '').replace(/,/g, '.');
+
           return {
             id: clean(cols[0]),
             fecha: clean(cols[1]),
             cliente: clean(cols[2]),
             vendedor: clean(cols[3]),
             productos: clean(cols[4]),
-            totalUsd: cols[5] ? parseFloat(clean(cols[5])) || 0 : 0
+            totalUsd: parseFloat(precioLimpio) || 0
           };
         });
 
-        // Cálculos matemáticos limpios sobre el array generado
         const totalPedidos = parsedData.length;
         const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
         const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
 
+        // 🟢 Setea tus variables para el JSX sin tocar los cargadores globales
         setDatosHistorial(parsedData);
         setMontoTotalFacturado(sumaFacturado);
         setOrdenesProcesadas(totalPedidos);
         setTicketPromedio(ticketPromedioCalc);
-        setError(null);
 
-      } catch (e: any) {
-        console.error("Error cargando historial desde la nube:", e);
-        setError("Error en sincronización: Failed to fetch");
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.error("Error cargando historial de forma aislada:", e);
+        // 🟢 NO llamamos a la alerta roja global (setError) para mantener la estabilidad
       }
     };
 
     cargarHistorialPedidos();
   }, []);
+
 
 
 
