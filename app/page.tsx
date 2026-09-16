@@ -244,7 +244,7 @@ export default function AppMolienda() {
     const cargarHistorialPedidos = async () => {
       try {
         // 🟢 La URL nativa real de tu documento con el formato de exportación directo que Google acepta libre de CORS
-        const URL_HISTORIAL_CSV = "https://google.com";
+        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
 
         const res = await fetch(URL_HISTORIAL_CSV);
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
