@@ -227,15 +227,19 @@ export default function AppMolienda() {
     // ==========================================
   // 2. CARGA DE HISTORIAL DE PEDIDOS (URL Real Sincronizada)
   // ==========================================
+    // ==========================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y Seguro)
+  // ==========================================
   useEffect(() => {
-    // URL de Publicación Web directa con tu GID real de Historial_Pedidos
-    const URL_HISTORIAL_CSV = `https://google.com{Date.now()}`;
+    const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
 
     const cargarHistorialPedidos = async () => {
       try {
         setLoading(true);
-        const res = await fetch(URL_HISTORIAL_CSV);
-        if (!res.ok) throw new Error("Error al obtener los datos de pedidos del servidor");
+        setError(null);
+
+        const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv");
+        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
         
         const text = await res.text();
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
@@ -249,21 +253,24 @@ export default function AppMolienda() {
         }
 
         const parsedData = rows.slice(1).map((row) => {
-          // Separa por comas respetando comas internas encerradas entre comillas
-          const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-          const clean = (val: string) => val ? val.replace(/^"|"$/g, '').trim() : '';
+          // Separación simple por comas idéntica a tu bloque de clientes
+          const cols = row.split(',');
+          
+          // Limpiador seguro para evitar que celdas vacías cuelguen el tipado
+          const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
 
+          // Mapeo exacto basado en tus 6 columnas secuenciales
           return {
             id: clean(cols[0]),
             fecha: clean(cols[1]),
             cliente: clean(cols[2]),
             vendedor: clean(cols[3]),
             productos: clean(cols[4]),
-            totalUsd: parseFloat(clean(cols[5])) || 0
+            totalUsd: cols[5] ? parseFloat(clean(cols[5])) || 0 : 0
           };
         });
 
-        // Cálculos para indicadores gerenciales
+        // Cálculos matemáticos limpios sobre el array generado
         const totalPedidos = parsedData.length;
         const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
         const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
@@ -275,8 +282,8 @@ export default function AppMolienda() {
         setError(null);
 
       } catch (e: any) {
-        console.error("Error al cargar el historial:", e);
-        setError(e.message || "Error al procesar el archivo CSV de pedidos");
+        console.error("Error cargando historial desde la nube:", e);
+        setError("Error en sincronización: Failed to fetch");
       } finally {
         setLoading(false);
       }
