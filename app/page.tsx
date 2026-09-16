@@ -101,6 +101,10 @@ export default function AppMolienda() {
   const [copiado, setCopiado] = useState(false);
   const [procesandoPedido, setProcesandoPedido] = useState(false);
   const [precioUnitario, setPrecioUnitario] = useState('');
+    const [montoTotalFacturado, setMontoTotalFacturado] = useState<number>(0);
+  const [ordenesProcesadas, setOrdenesProcesadas] = useState<number>(0);
+  const [ticketPromedio, setTicketPromedio] = useState<number>(0);
+
 
   const fetchData = async () => {
     try {
@@ -193,6 +197,9 @@ export default function AppMolienda() {
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ORIGINAL RESTAURADO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ENLACE DIRECTO FIJO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+    // ==========================================
+  // 1. CARGA DE CLIENTES (Tu bloque existente)
+  // ==========================================
   useEffect(() => {
     fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
       .then(res => {
@@ -203,7 +210,6 @@ export default function AppMolienda() {
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
         const parsed = rows.slice(1).map(row => {
           const cols = row.split(',');
-          // 🟢 PROTECCIÓN DE TIPADO: Aseguramos que si viene una celda vacía no rompa el Fetch
           return {
             nombre: cols[0] ? String(cols[0]).replace(/"/g, '').trim() : '',
             rif: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
@@ -215,7 +221,69 @@ export default function AppMolienda() {
       .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
   }, []);
 
+  // ==========================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (El nuevo bloque)
+  // ==========================================
+    // ==========================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (URL Real Sincronizada)
+  // ==========================================
+  useEffect(() => {
+    // URL de Publicación Web directa con tu GID real de Historial_Pedidos
+    const URL_HISTORIAL_CSV = `https://google.com{Date.now()}`;
 
+    const cargarHistorialPedidos = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(URL_HISTORIAL_CSV);
+        if (!res.ok) throw new Error("Error al obtener los datos de pedidos del servidor");
+        
+        const text = await res.text();
+        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        
+        if (rows.length <= 1) {
+          setDatosHistorial([]);
+          setMontoTotalFacturado(0);
+          setOrdenesProcesadas(0);
+          setTicketPromedio(0);
+          return;
+        }
+
+        const parsedData = rows.slice(1).map((row) => {
+          // Separa por comas respetando comas internas encerradas entre comillas
+          const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+          const clean = (val: string) => val ? val.replace(/^"|"$/g, '').trim() : '';
+
+          return {
+            id: clean(cols[0]),
+            fecha: clean(cols[1]),
+            cliente: clean(cols[2]),
+            vendedor: clean(cols[3]),
+            productos: clean(cols[4]),
+            totalUsd: parseFloat(clean(cols[5])) || 0
+          };
+        });
+
+        // Cálculos para indicadores gerenciales
+        const totalPedidos = parsedData.length;
+        const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
+        const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
+
+        setDatosHistorial(parsedData);
+        setMontoTotalFacturado(sumaFacturado);
+        setOrdenesProcesadas(totalPedidos);
+        setTicketPromedio(ticketPromedioCalc);
+        setError(null);
+
+      } catch (e: any) {
+        console.error("Error al cargar el historial:", e);
+        setError(e.message || "Error al procesar el archivo CSV de pedidos");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarHistorialPedidos();
+  }, []);
 
 
 
