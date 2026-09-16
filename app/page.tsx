@@ -95,6 +95,12 @@ export default function AppMolienda() {
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
+    // 🟢 DECLARACIÓN DE VARIABLES PARA EL HISTORIAL DE PEDIDOS
+  const [datosHistorial, setDatosHistorial] = useState<any[]>([]);
+  const [montoTotalFacturado, setMontoTotalFacturado] = useState<number>(0);
+  const [ordenesProcesadas, setOrdenesProcesadas] = useState<number>(0);
+  const [ticketPromedio, setTicketPromedio] = useState<number>(0);
+
   // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
   const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
@@ -192,7 +198,14 @@ export default function AppMolienda() {
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ORIGINAL RESTAURADO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ENLACE DIRECTO FIJO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+    // ====================================================================
+  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+  // ====================================================================
+  // ====================================================================
+  // 1. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+  // ====================================================================
   useEffect(() => {
+    // Tu URL directa original de clientes, sin alteraciones
     fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
       .then(res => {
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
@@ -202,7 +215,6 @@ export default function AppMolienda() {
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
         const parsed = rows.slice(1).map(row => {
           const cols = row.split(',');
-          // 🟢 PROTECCIÓN DE TIPADO: Aseguramos que si viene una celda vacía no rompa el Fetch
           return {
             nombre: cols[0] ? String(cols[0]).replace(/"/g, '').trim() : '',
             rif: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
@@ -213,6 +225,55 @@ export default function AppMolienda() {
       })
       .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
   }, []);
+
+  // ====================================================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y aislado)
+  // ====================================================================
+  useEffect(() => {
+    const cargarHistorialPedidos = async () => {
+      try {
+        // Tu URL directa de pedidos usando el formato nativo de Docs que querías
+        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
+
+        const res = await fetch(URL_HISTORIAL_CSV);
+        if (!res.ok) throw new Error("Error en pedidos");
+        
+        const text = await res.text();
+        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        
+        if (rows.length <= 1) return;
+
+        const parsedData = rows.slice(1).map((row) => {
+          const cols = row.split(',');
+          const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
+
+          return {
+            id: clean(cols[0]),
+            fecha: clean(cols[1]),
+            cliente: clean(cols[2]),
+            vendedor: clean(cols[3]),
+            productos: clean(cols[4]),
+            totalUsd: cols[5] ? parseFloat(clean(cols[5])) || 0 : 0
+          };
+        });
+
+        const totalPedidos = parsedData.length;
+        const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
+        const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
+
+        setDatosHistorial(parsedData);
+        setMontoTotalFacturado(sumaFacturado);
+        setOrdenesProcesadas(totalPedidos);
+        setTicketPromedio(ticketPromedioCalc);
+
+      } catch (e) {
+        console.error("Error cargando historial de pedidos:", e);
+      }
+    };
+
+    cargarHistorialPedidos();
+  }, []);
+
 
 
 
