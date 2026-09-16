@@ -95,6 +95,7 @@ export default function AppMolienda() {
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
+  const [datosHistorial, setDatosHistorial] = useState([]);
   // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
   const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
@@ -774,22 +775,94 @@ export default function AppMolienda() {
                         <Bar dataKey="carb400G" name="400-G" stackId="a" fill="#f43f5e" />
                         <Bar dataKey="carb400B" name="400-B" stackId="a" fill="#10b981" />
                         <Bar dataKey="maquila" name="Maquila" stackId="a" fill="#8b5cf6" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                                         </BarChart>
+                  </ResponsiveContainer>
                 </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto">
-            <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-} // 🟢 Cierre definitivo de tu función de componente principal (AppMolienda)
+              </div>
+
+              {/* ======================================================== */}
+              {/* 🟢 SECCIÓN FINANCIERA Y HISTORIAL GERENCIAL COMERCIAL   */}
+              {/* ======================================================== */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                {/* Tarjeta Verde: Monto Facturado */}
+                <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Monto Total Facturado</span>
+                  <span className="text-2xl font-black text-emerald-400 font-mono">
+                    ${(datosHistorial || []).reduce((acc: number, p: any) => acc + (parseFloat(p?.totalUSD) || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-2">Suma total de pedidos registrados en el sistema</p>
+                </div>
+
+                {/* Tarjeta: Conteo de Pedidos */}
+                <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Órdenes Procesadas</span>
+                  <span className="text-2xl font-black text-sky-400 font-mono">{(datosHistorial || []).length} Pedido(s)</span>
+                  <p className="text-[10px] text-slate-500 mt-2">Transacciones comerciales totales de la jornada</p>
+                </div>
+
+                {/* Tarjeta: Ticket Promedio */}
+                <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Ticket Promedio General</span>
+                  <span className="text-2xl font-black text-purple-400 font-mono">
+                    ${((datosHistorial || []).length > 0 
+                      ? (datosHistorial || []).reduce((acc: number, p: any) => acc + (parseFloat(p?.totalUSD) || 0), 0) / (datosHistorial || []).length 
+                      : 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-2">Valor medio estimado por orden de compra</p>
+                </div>
+              </div>
+
+              {/* TABLA DE MOVIMIENTOS HISTÓRICOS EN TIEMPO REAL */}
+              <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/80 shadow-md mt-6">
+                <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider block mb-3">Últimas Órdenes en Tiempo Real</span>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-500 font-bold uppercase tracking-wider bg-slate-900/40">
+                        <th className="p-3">ID</th>
+                        <th className="p-3">Fecha</th>
+                        <th className="p-3">Cliente</th>
+                        <th className="p-3">Vendedor</th>
+                        <th className="p-3">Detalle</th>
+                        <th className="p-3 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(!datosHistorial || datosHistorial.length === 0) ? (
+                        <tr>
+                          <td colSpan={6} className="p-4 text-center italic text-slate-600">No hay registros de pedidos comerciales disponibles...</td>
+                        </tr>
+                      ) : (
+                        datosHistorial.map((p: any, index: number) => (
+                          <tr key={index} className="border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors">
+                            <td className="p-3 font-mono font-bold text-sky-400">{p?.idPedido || `P-${1000 + index}`}</td>
+                            <td className="p-3 text-slate-400">{p?.fecha}</td>
+                            <td className="p-3 font-bold text-slate-200 uppercase">{p?.cliente}</td>
+                            <td className="p-3 text-slate-300 font-medium">{p?.vendedor || "No asignado"}</td>
+                            <td className="p-3 text-slate-400 font-sans max-w-xs truncate">{p?.productos}</td>
+                            <td className="p-3 text-right font-mono font-bold text-emerald-400">${(parseFloat(p?.totalUSD) || 0).toFixed(2)}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto">
+          <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
+        </div>
+      )}
+    </main>
+  </div>
+);
+}
+
 
 // COMPONENTE AUXILIAR EN LA RAÍZ DEL ARCHIVO
 // 🟢 Corregido: Agregamos interfaz de tipos estricta para las propiedades de la tarjeta de totales
