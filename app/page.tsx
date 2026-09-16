@@ -107,17 +107,18 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
   const [ordenesProcesadas, setOrdenesProcesadas] = useState<number>(0);
   const [ticketPromedio, setTicketPromedio] = useState<number>(0);
 
-
   const fetchData = async () => {
     try {
       setError(null);
       const response = await fetch(`${SHEET_URL}&t=${Date.now()}`);
       if (!response.ok) throw new Error("No se pudo obtener la información de Google Sheets");
 
-            const text = await response.text();
+      const text = await response.text();
       const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
 
-      // 🟢 Corregido: Se tipó el objeto de mapeo para evitar restricciones estrictas de tipado dinámico
+      // Si por alguna razón la respuesta viene vacía, no borramos lo que ya está en pantalla
+      if (rows.length <= 1) return;
+
       const dailyMap: Record<string, any> = {};
       let tc = 0, ty = 0, t200 = 0, t400g = 0, t400b = 0, tm = 0, td = 0, tmaq = 0;
       let mProd = 0, mMerma = 0;
@@ -127,28 +128,27 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
-      // 🟢 Saneado: Unificamos y cerramos un solo ciclo for matemático sin códigos duplicados huérfanos
       for (let i = 1; i < rows.length; i++) {
+        // Usamos tu procesador nativo de líneas
         const cols = parseCSVLine(rows[i]);
+        if (!cols || cols.length === 0) continue; // 🟢 PROTECCIÓN: Si la línea está rota, la salta y no rompe el loop
         
-        // Asignamos los índices reales de las columnas para los sacos
-        if (cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
-        if (cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
-        if (cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
+        // Validación segura de índices para evitar caídas catastróficas
+        if (cols[11] && cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
+        if (cols[12] && cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
+        if (cols[13] && cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
 
-        // Extraemos la fecha de la primera columna (índice 0)
         const fechaStr = cols[0]?.trim();
         
         if (fechaStr && fechaStr.length > 5) {
-          // Asignamos los índices correctos para la producción diaria
-          const vC = cleanNum(cols[1]);
-          const vY = cleanNum(cols[2]);
-          const v200 = cleanNum(cols[3]);
-          const v400g = cleanNum(cols[4]);
-          const v400b = cleanNum(cols[5]);
-          const vDesp = cleanNum(cols[6]);
-          const vM = cleanNum(cols[7]);
-          const vMaquila = cleanNum(cols[14]);
+          const vC = cols[1] ? cleanNum(cols[1]) : 0;
+          const vY = cols[2] ? cleanNum(cols[2]) : 0;
+          const v200 = cols[3] ? cleanNum(cols[3]) : 0;
+          const v400g = cols[4] ? cleanNum(cols[4]) : 0;
+          const v400b = cols[5] ? cleanNum(cols[5]) : 0;
+          const vDesp = cols[6] ? cleanNum(cols[6]) : 0;
+          const vM = cols[7] ? cleanNum(cols[7]) : 0;
+          const vMaquila = cols[14] ? cleanNum(cols[14]) : 0;
 
           tc += vC; ty += vY; t200 += v200; t400g += v400g; t400b += v400b; td += vDesp; tm += vM;
           tmaq += vMaquila;
@@ -173,12 +173,15 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
         }
       }
 
-      setData(Object.values(dailyMap));
-      setTotals({ c: tc, y: ty, c200: t200, c400G: t400g, c400B: t400b, merma: tm, desp: td, maqAcumulada: tmaq });
-      setMonthlyTotals({ produccion: mProd, merma: mMerma });
-      setInventory({ pol: lastPol, pap: lastPap, big: lastBig });
+      // 🟢 SOLO ACTUALIZAMOS SI EL MAPA GENERÓ DATOS REALES
+      const finalData = Object.values(dailyMap);
+      if (finalData.length > 0) {
+        setData(finalData);
+        setTotals({ c: tc, y: ty, c200: t200, c400G: t400g, c400B: t400b, merma: tm, desp: td, maqAcumulada: tmaq });
+        setMonthlyTotals({ produccion: mProd, merma: mMerma });
+        setInventory({ pol: lastPol, pap: lastPap, big: lastBig });
+      }
     } catch (e) {
-      // 🟢 Corregido: Validación nativa estricta de catch para TypeScript en Vercel
       if (e instanceof Error) {
         setError(e.message);
       } else {
@@ -188,6 +191,7 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
       setLoading(false);
     }
   };
+
 
   // 1. SINCRONIZACIÓN DE DATOS DIARIOS
   useEffect(() => { 
@@ -242,7 +246,7 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
         // Cambia el URL si prefieres usar el formato directo que usas en clientes
         const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
 
-        const res = await fetch(URL_HISTORIAL_CSV);
+        const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv");
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
         
         const text = await res.text();
