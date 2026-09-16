@@ -239,12 +239,21 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
     // =========================================================
   // NUEVO BLOQUE DE HISTORIAL: TOTALMENTE AISLADO Y SEGURO
   // =========================================================
+    // ==========================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (Con Seguro Anti-Fallo Inicial)
+  // ==========================================
   useEffect(() => {
+    const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
+
     const cargarHistorialPedidos = async () => {
+      // 🟢 PROTECCIÓN: Si la URL está corrupta o vacía por un retraso del componente, frena el flujo
+      if (!URL_HISTORIAL_CSV || URL_HISTORIAL_CSV.includes("undefined")) {
+        return; 
+      }
+
       try {
-        // 🟢 Usamos variables internas propias para no tumbar la VISTA 1 de producción
-        // Cambia el URL si prefieres usar el formato directo que usas en clientes
-        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
+        setLoadingHistorial(true);
+        setErrorHistorial(null);
 
         const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv");
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
@@ -264,7 +273,6 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
           const cols = row.split(',');
           const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
 
-          // 🟢 Filtra el texto monetario (elimina $, espacios y ajusta decimales) antes de sumarlo
           const rawPrecio = clean(cols[5]);
           const precioLimpio = rawPrecio.replace(/[\$\s]/g, '').replace(/,/g, '.');
 
@@ -282,20 +290,24 @@ const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
         const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
         const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
 
-        // 🟢 Setea tus variables para el JSX sin tocar los cargadores globales
         setDatosHistorial(parsedData);
         setMontoTotalFacturado(sumaFacturado);
         setOrdenesProcesadas(totalPedidos);
         setTicketPromedio(ticketPromedioCalc);
+        setErrorHistorial(null); // Limpiamos el error interno si todo sale bien
 
-      } catch (e) {
-        console.error("Error cargando historial de forma aislada:", e);
-        // 🟢 NO llamamos a la alerta roja global (setError) para mantener la estabilidad
+      } catch (e: any) {
+        console.error("Error cargando historial desde la nube:", e);
+        // Almacenamos el error solo en el canal secundario para no tumbar la app
+        setErrorHistorial("Error al conectar con el servidor de pedidos");
+      } finally {
+        setLoadingHistorial(false);
       }
     };
 
     cargarHistorialPedidos();
-  }, []);
+  }, []); // Se ejecuta de forma segura al montar el componente
+
 
 
 
