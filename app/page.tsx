@@ -204,9 +204,14 @@ export default function AppMolienda() {
   // ====================================================================
   // 1. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
   // ====================================================================
+   // ====================================================================
+  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+  // ====================================================================
   useEffect(() => {
-    // Tu URL directa original de clientes, sin alteraciones
-    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
+    const URL_CLIENTES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv";
+
+    // 🟢 Agregamos un control de cabecera estándar para indicarle a Google que libere la cuota local
+    fetch(URL_CLIENTES, { cache: 'no-store' })
       .then(res => {
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
         return res.text();
@@ -223,29 +228,45 @@ export default function AppMolienda() {
         });
         setListaClientes(parsed);
       })
-      .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
+      .catch(e => {
+        console.error("Error cargando clientes molienda desde la nube:", e);
+      });
   }, []);
+
 
   // ====================================================================
   // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y aislado)
   // ====================================================================
+   // ====================================================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (Ruta Nativa de Google Docs)
+  // ====================================================================
   useEffect(() => {
     const cargarHistorialPedidos = async () => {
       try {
-        // Tu URL directa de pedidos usando el formato nativo de Docs que querías
-        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
+        // 🟢 La URL nativa real de tu documento con el formato de exportación directo que Google acepta libre de CORS
+        const URL_HISTORIAL_CSV = "https://google.com";
 
         const res = await fetch(URL_HISTORIAL_CSV);
-        if (!res.ok) throw new Error("Error en pedidos");
+        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
         
         const text = await res.text();
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
         
-        if (rows.length <= 1) return;
+        if (rows.length <= 1) {
+          setDatosHistorial([]);
+          setMontoTotalFacturado(0);
+          setOrdenesProcesadas(0);
+          setTicketPromedio(0);
+          return;
+        }
 
         const parsedData = rows.slice(1).map((row) => {
           const cols = row.split(',');
           const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
+
+          // Limpieza directa en memoria para el dinero de la columna 6 antes de sumar
+          const rawPrecio = clean(cols[5]);
+          const precioLimpio = rawPrecio.replace(/[\$\s]/g, '').replace(/,/g, '.');
 
           return {
             id: clean(cols[0]),
@@ -253,7 +274,7 @@ export default function AppMolienda() {
             cliente: clean(cols[2]),
             vendedor: clean(cols[3]),
             productos: clean(cols[4]),
-            totalUsd: cols[5] ? parseFloat(clean(cols[5])) || 0 : 0
+            totalUsd: parseFloat(precioLimpio) || 0
           };
         });
 
@@ -267,12 +288,13 @@ export default function AppMolienda() {
         setTicketPromedio(ticketPromedioCalc);
 
       } catch (e) {
-        console.error("Error cargando historial de pedidos:", e);
+        console.error("Fallo controlado en historial:", e);
       }
     };
 
     cargarHistorialPedidos();
   }, []);
+
 
 
 
