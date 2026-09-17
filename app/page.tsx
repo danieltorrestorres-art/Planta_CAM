@@ -240,6 +240,7 @@ export default function AppMolienda() {
    // ====================================================================
   // 2. CARGA DE HISTORIAL DE PEDIDOS (Ruta Nativa de Google Docs)
   // ====================================================================
+  /*
   useEffect(() => {
     const cargarHistorialPedidos = async () => {
       try {
@@ -294,7 +295,7 @@ export default function AppMolienda() {
 
     cargarHistorialPedidos();
   }, []);
-
+*/
 
 
 
