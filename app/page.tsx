@@ -563,85 +563,106 @@ export default function AppMolienda() {
 
 
                        {/* SECCIÓN DATOS CLIENTE */}
-                                     {/* Columna 1: Cliente */}
-<div className="relative">
-  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
-  
-  <div className="relative flex items-center">
-    <input 
-      type="text"
-      value={cliente}
-      onChange={(e) => {
-        const valor = e.target.value;
-        setCliente(valor);
-        setMostrarDropdown(true); // Abre las sugerencias al escribir
-        
-        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
-          const coincidencia = listaClientes.find(
-            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
-          );
-          if (coincidencia) {
-            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
-            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
-          }
-        }
-      }}
-      onFocus={() => setMostrarDropdown(true)}
-      onBlur={() => setTimeout(() => setMostrarDropdown(false), 200)} // Delay pequeño para permitir el click en la sugerencia
-      placeholder="Escribe o selecciona..."
-      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
-    />
-    
-    {/* 🟢 LA FLECHA DE DESPLIEGUE NUEVA */}
-    <div 
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer pointer-events-none"
-    >
-      <svg 
-        xmlns="http://w3.org" 
-        fill="none" 
-        viewBox="0 0 24 24" 
-        strokeWidth={2.5} 
-        stroke="currentColor" 
-        className="w-3 h-3 transition-transform duration-200"
-        style={{ transform: mostrarDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-      </svg>
-    </div>
-  </div>
+                                         {/* Columna 1: Cliente */}
+                <div className="relative">
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
+                  
+                  <div className="relative flex items-center">
+                    <input 
+                      type="text"
+                      value={cliente}
+                      onChange={(e) => {
+                        const valor = e.target.value;
+                        setCliente(valor);
+                        setMostrarDropdown(true);
+                        
+                        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                          const coincidencia = listaClientes.find(
+                            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
+                          );
+                          if (coincidencia) {
+                            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
+                            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
+                          }
+                        }
+                      }}
+                      onFocus={() => setMostrarDropdown(true)}
+                      onBlur={() => setTimeout(() => setMostrarDropdown(false), 200)}
+                      placeholder="Escribe o selecciona..."
+                      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
+                    />
+                    
+                    {/* Icono de Flecha */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                      <svg 
+                        xmlns="http://w3.org" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        strokeWidth={2.5} 
+                        stroke="currentColor" 
+                        className="w-3 h-3 transition-transform duration-200"
+                        style={{ transform: mostrarDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </div>
+                  </div>
 
-  {/* 🟢 EL DESPLEGABLE PERSONALIZADO (REMPLAZA AL DATALIST) */}
-  {mostrarDropdown && typeof listaClientes !== 'undefined' && Array.isArray(listaClientes) && (
-    <div className="absolute z-50 w-full mt-1 bg-[#0a0f1c] border border-slate-700 rounded-xl max-h-48 overflow-y-auto shadow-2xl backdrop-blur-md">
-      {listaClientes
-        .filter((c) => {
-          if (!cliente) return true; // Si está vacío muestra todos al dar clic
-          return c && c.nombre && String(c.nombre).toLowerCase().includes(cliente.toLowerCase());
-        })
-        .map((c: any, idx: number) => (
-          <div
-            key={idx}
-            onMouseDown={() => {
-              // Usamos onMouseDown porque se ejecuta antes que el onBlur del input
-              setCliente(c.nombre);
-              if (c.rif && typeof setRifCliente === 'function') setRifCliente(c.rif);
-              if (c.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(c.telefono);
-              setMostrarDropdown(false);
-            }}
-            className="px-3 py-2 text-xs text-slate-300 hover:bg-sky-600/30 hover:text-white cursor-pointer border-b border-slate-800/50 last:border-b-0 text-left transition-colors"
-          >
-            <div className="font-medium">{c.nombre}</div>
-            {c.rif && <div className="text-[10px] text-slate-500 font-mono">RIF: {c.rif}</div>}
-          </div>
-        ))}
-      {/* Mensaje por si no encuentra ningún cliente */}
-      {listaClientes.filter(c => c && c.nombre && String(c.nombre).toLowerCase().includes(cliente.toLowerCase())).length === 0 && (
-        <div className="px-3 py-2 text-xs text-slate-500 italic text-left">No hay resultados</div>
-      )}
-    </div>
-  )}
-</div>
+                                 {/* Columna 1: Cliente */}
+                <div className="relative">
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
+                  
+                  <div className="relative flex items-center">
+                    <input 
+                      type="text"
+                      list="clientes-sugeridos"
+                      value={cliente}
+                      onChange={(e) => {
+                        const valor = e.target.value;
+                        setCliente(valor);
+                        
+                        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                          const coincidencia = listaClientes.find(
+                            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
+                          );
+                          if (coincidencia) {
+                            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
+                            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
+                          }
+                        }
+                      }}
+                      placeholder="Escribe o selecciona..."
+                      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
+                    />
+                    
+                    {/* Flecha visual integrada sin lógica pesada */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+                      <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3 h-3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </div>
+                  </div>
 
+                  <datalist id="clientes-sugeridos">
+                    {(listaClientes || []).map((c: any, idx: number) => (
+                      <option key={idx} value={c.nombre} />
+                    ))}
+                  </datalist>
+                </div>
+
+
+
+                {/* Columna 2: RIF */}
+                <div>
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">RIF / Cédula</label>
+                  <input 
+                    type="text"
+                    value={rifCliente}
+                    onChange={(e) => setRifCliente(e.target.value)}
+                    placeholder="J-XXXXXXXX-X"
+                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  />
+                </div>
 
                 {/* Columna 3: Teléfono Móvil */}
                 <div>
