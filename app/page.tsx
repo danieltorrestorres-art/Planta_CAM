@@ -808,16 +808,16 @@ export default function AppMolienda() {
                 onClick={fetchData} 
                 className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all"
               >
-                           {/* 🟢 BOTÓN DESACTIVADO TEMPORALMENTE PARA COMPROBACIÓN */}
-              {/* 
-              <button className="tu-clase-de-estilo">
+                                   {/* 🟢 BOTÓN DESACTIVADO TEMPORALMENTE PARA COMPROBACIÓN */}
+            {/* 
+            <div>
+              <button className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
                 🔄 Sincronizar Nube
-              </button> 
-              */}
+              </button>
             </div>
+            */}
 
             {loading ? (
-
               <div className="p-12 text-center text-xs text-slate-500 font-mono tracking-widest uppercase">
                 ⏳ Descargando base de datos de producción molienda...
               </div>
@@ -826,6 +826,11 @@ export default function AppMolienda() {
                 <AlertTriangle size={16} /> Error en sincronización: {error}
               </div>
             ) : (
+              <div className="space-y-4">
+                {/* Aquí continúa el resto del contenido cuando ya no está cargando y no hay error */}
+              </div>
+            )}
+    
               <>
                 {/* INDICADORES CLAVE GENERALES */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
