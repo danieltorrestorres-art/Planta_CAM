@@ -790,27 +790,7 @@ export default function AppMolienda() {
       </div> 
     </div> 
 
-                {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO) */}
-        {/* ======================================================== */}
-        {esGerente ? (
-          <div className="mt-8 space-y-6">
-            {/* Aquí adentro va el código de tus tarjetas de pedidos y gráficas */}
-            <p className="text-xs text-slate-400">Cargando datos gerenciales...</p>
-          </div>
-        ) : (
-          <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto mt-6">
-            <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
-          </div>
-        )}
-
-
-                            <button 
-                onClick={fetchData} 
-                className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all"
-              >
-                                      {/* 🟢 TODO EL BLOQUE DE CARGA Y ESTADO SINCRO DESACTIVADO TEMPORALMENTE */}
-            {/* 
-            {loading ? (
+              {loading ? (
               <div className="p-12 text-center text-xs text-slate-500 font-mono tracking-widest uppercase">
                 ⏳ Descargando base de datos de producción molienda...
               </div>
@@ -819,25 +799,29 @@ export default function AppMolienda() {
                 <AlertTriangle size={16} /> Error en sincronización: {error}
               </div>
             ) : (
-              <div className="p-4 bg-[#0a0f1c]/40 border border-slate-800 rounded-xl text-xs text-slate-400 text-center">
-                ✅ Conexión con la base de datos de molienda establecida con éxito.
-              </div>
-            )}
-            */}
-
-
-    
-              <>
+              <div className="space-y-6">
                 {/* INDICADORES CLAVE GENERALES */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <TotalCard label="Producción Mes Actual" val={monthlyTotals.produccion} col="text-sky-400" />
-                  <TotalCard label="Molienda Histórica" val={totals.c + totals.y + totals.c200 + totals.c400G + totals.c400B} col="text-white" />
-                  <TotalCard label="Maquila Procesada" val={totals.maqAcumulada} col="text-violet-400" />
-                  <TotalCard label="Merma Global (Tn)" val={totals.merma} col="text-rose-400" />
+                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
+                    <p className="text-[9px] text-slate-400 uppercase font-bold">Producción Mes Actual</p>
+                    <p className="text-base font-black text-sky-400">{monthlyTotals.produccion.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
+                    <p className="text-[9px] text-slate-400 uppercase font-bold">Molienda Histórica</p>
+                    <p className="text-base font-black text-white">{(totals.c + totals.y + totals.c200 + totals.c400G + totals.c400B).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
+                    <p className="text-[9px] text-slate-400 uppercase font-bold">Maquila Procesada</p>
+                    <p className="text-base font-black text-violet-400">{totals.maqAcumulada.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
+                    <p className="text-[9px] text-slate-400 uppercase font-bold">Merma Global (Tn)</p>
+                    <p className="text-base font-black text-rose-400">{totals.merma.toLocaleString()}</p>
+                  </div>
                 </div>
 
                 {/* INDICADORES DE INVENTARIO FÍSICO */}
-                <div className="bg-slate-900/20 p-4 rounded-2xl border border-slate-800/60 space-y-3">
+                <div className="bg-slate-900/20 p-4 rounded-2xl border border-slate-800/60 space-y-3 mt-4">
                   <div className="flex items-center gap-2 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
                     <Package size={14} className="text-amber-400" /> Existencia de Sacos Vacíos en Planta
                   </div>
@@ -858,7 +842,7 @@ export default function AppMolienda() {
                 </div>
 
                 {/* GRÁFICO HISTÓRICO DE MOLIENDA */}
-                <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3 mt-4">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                     <CalendarDays size={13} className="text-sky-400" /> Cronograma de Production por Fecha (Últimos Registros)
                   </p>
@@ -873,28 +857,33 @@ export default function AppMolienda() {
                         <Bar dataKey="caolin" name="Caolín" stackId="a" fill="#38bdf8" />
                         <Bar dataKey="yeso" name="Yeso" stackId="a" fill="#e2e8f0" />
                         <Bar dataKey="carb200" name="C-200" stackId="a" fill="#fbbf24" />
-                        <Bar dataKey="carb400G" name="400-G" stackId="a" fill="#f43f5e" />
-                        <Bar dataKey="carb400B" name="400-B" stackId="a" fill="#10b981" />
+                        <Bar dataKey="carb400G" name="400-G" stroke="none" fill="#f43f5e" />
+                        <Bar dataKey="carb400B" name="400-B" stroke="none" fill="#10b981" />
                         <Bar dataKey="maquila" name="Maquila" stackId="a" fill="#8b5cf6" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-              </>
+              </div>
             )}
-          </div>
-        ) : (
-          <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto">
-            <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-} // 🟢 Cierre definitivo de tu función de componente principal (AppMolienda)
 
+            {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO) */}
+            {esGerente ? (
+              <div className="mt-8 space-y-6">
+                <p className="text-xs text-slate-400">Cargando datos gerenciales...</p>
+              </div>
+            ) : (
+              <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto mt-6">
+                <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+      
 // COMPONENTE AUXILIAR EN LA RAÍZ DEL ARCHIVO
-// 🟢 Corregido: Agregamos interfaz de tipos estricta para las propiedades de la tarjeta de totales
 interface TotalCardProps {
   label: string;
   val: number;
@@ -903,8 +892,10 @@ interface TotalCardProps {
 
 function TotalCard({ label, val, col }: TotalCardProps) {
   return (
-    <div className="bg-[#141b2d] p-4 rounded-2xl border border-slate-800 text-center shadow-md">
-      <p className="text-[9px] text-slate-500 uppercase font-black mb-1 tracking-wider">{label}</p>
+    <div className="bg-[#141b2d] p-4 rounded-2xl border border-slate-800 text-center shadow-lg">
+      <p className="text-[9px] text-slate-500 uppercase font-black mb-1 tracking-wider">
+        {label}
+      </p>
       <p className={`text-xl font-black ${col}`}>
         {val.toLocaleString(undefined, { maximumFractionDigits: 1 })}
       </p>
