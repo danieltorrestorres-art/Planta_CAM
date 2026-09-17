@@ -808,7 +808,7 @@ export default function AppMolienda() {
                 onClick={fetchData} 
                 className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all"
               >
-                                   {/* 🟢 BOTÓN DESACTIVADO TEMPORALMENTE PARA COMPROBACIÓN */}
+                          {/* 🟢 BOTÓN DESACTIVADO TEMPORALMENTE PARA COMPROBACIÓN */}
             {/* 
             <div>
               <button className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
@@ -826,10 +826,11 @@ export default function AppMolienda() {
                 <AlertTriangle size={16} /> Error en sincronización: {error}
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Aquí continúa el resto del contenido cuando ya no está cargando y no hay error */}
+              <div className="p-4 bg-[#0a0f1c]/40 border border-slate-800 rounded-xl text-xs text-slate-400 text-center">
+                ✅ Conexión con la base de datos de molienda establecida con éxito.
               </div>
             )}
+
     
               <>
                 {/* INDICADORES CLAVE GENERALES */}
