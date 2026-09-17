@@ -95,8 +95,6 @@ export default function AppMolienda() {
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
-  const [mostrarDropdown, setMostrarDropdown] = useState(false);
-
     // 🟢 DECLARACIÓN DE VARIABLES PARA EL HISTORIAL DE PEDIDOS
   const [datosHistorial, setDatosHistorial] = useState<any[]>([]);
   const [montoTotalFacturado, setMontoTotalFacturado] = useState<number>(0);
@@ -209,8 +207,11 @@ export default function AppMolienda() {
    // ====================================================================
   // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
   // ====================================================================
-   useEffect(() => {
-    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
+  useEffect(() => {
+    const URL_CLIENTES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv";
+
+    // 🟢 Agregamos un control de cabecera estándar para indicarle a Google que libere la cuota local
+    fetch(URL_CLIENTES, { cache: 'no-store' })
       .then(res => {
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
         return res.text();
@@ -219,7 +220,6 @@ export default function AppMolienda() {
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
         const parsed = rows.slice(1).map(row => {
           const cols = row.split(',');
-          // 🟢 PROTECCIÓN DE TIPADO: Aseguramos que si viene una celda vacía no rompa el Fetch
           return {
             nombre: cols[0] ? String(cols[0]).replace(/"/g, '').trim() : '',
             rif: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
@@ -228,7 +228,9 @@ export default function AppMolienda() {
         });
         setListaClientes(parsed);
       })
-      .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
+      .catch(e => {
+        console.error("Error cargando clientes molienda desde la nube:", e);
+      });
   }, []);
 
 
@@ -562,130 +564,51 @@ export default function AppMolienda() {
             </div>
 
 
-                   {/* SECCIÓN DATOS CLIENTE */}
-{/* Columna 1: Cliente */}
-<div className="relative">
-  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
-  
-  <div className="relative flex items-center">
-    <input 
-      type="text"
-      value={cliente}
-      onChange={(e) => {
-        const valor = e.target.value;
-        setCliente(valor);
-        setMostrarDropdown(true); // Abre las sugerencias al escribir
-        
-        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
-          const coincidencia = listaClientes.find(
-            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
-          );
-          if (coincidencia) {
-            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
-            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
-          }
-        }
-      }}
-      onFocus={() => setMostrarDropdown(true)}
-      onBlur={() => setTimeout(() => setMostrarDropdown(false), 200)} // Delay pequeño para permitir el click en la sugerencia
-      placeholder="Escribe o selecciona..."
-      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
-    />
-    
-    {/* 🟢 LA FLECHA DE DESPLIEGUE NUEVA (CORREGIDA) */}
-    <div 
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer pointer-events-none"
-    >
-      <svg 
-        xmlns="http://w3.org" 
-        fill="none" 
-        viewBox="0 0 24 24" 
-        strokeWidth={2.5} 
-        stroke="currentColor" 
-        className="w-3 h-3 transition-transform duration-200"
-        style={{ transform: mostrarDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-      </svg>
-    </div>
-  </div>
-
-  {/* 🟢 EL DESPLEGABLE PERSONALIZADO (REMPLAZA AL DATALIST) */}
-  {mostrarDropdown && typeof listaClientes !== 'undefined' && Array.isArray(listaClientes) && (
-    <div className="absolute z-50 w-full mt-1 bg-[#0a0f1c] border border-slate-700 rounded-xl max-h-48 overflow-y-auto shadow-2xl backdrop-blur-md">
-      {listaClientes
-        .filter((c) => {
-          if (!cliente) return true; // Si está vacío muestra todos al dar clic
-          return c && c.nombre && String(c.nombre).toLowerCase().includes(cliente.toLowerCase());
-        })
-        .map((c: any, idx: number) => (
-          <div
-            key={idx}
-            onMouseDown={() => {
-              // Usamos onMouseDown porque se ejecuta antes que el onBlur del input
-              setCliente(c.nombre);
-              if (c.rif && typeof setRifCliente === 'function') setRifCliente(c.rif);
-              if (c.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(c.telefono);
-              setMostrarDropdown(false);
-            }}
-            className="px-3 py-2 text-xs text-slate-300 hover:bg-sky-600/30 hover:text-white cursor-pointer border-b border-slate-800/50 last:border-b-0 text-left transition-colors"
-          >
-            <div className="font-medium">{c.nombre}</div>
-            {c.rif && <div className="text-[10px] text-slate-500 font-mono">RIF: {c.rif}</div>}
-          </div>
-        ))}
-      {/* Mensaje por si no encuentra ningún cliente */}
-      {listaClientes.filter((c) => c && c.nombre && String(c.nombre).toLowerCase().includes(cliente.toLowerCase())).length === 0 && (
-        <div className="px-3 py-2 text-xs text-slate-500 italic text-left">No hay resultados</div>
-      )}
-    </div>
-  )}
-</div>
- 
-
-                                 {/* Columna 1: Cliente */}
-                <div className="relative">
+                       {/* SECCIÓN DATOS CLIENTE */}
+                                     <div className="mb-4">
+                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Nombre del Vendedor</label>
+                <input 
+                  type="text"
+                  value={vendedorInput}
+                  onChange={(e) => setVendedorInput(e.target.value)}
+                  placeholder="Ej: Carlos Perez"
+                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+          
+              {/* Contenedor principal que agrupa las 3 columnas en una sola fila */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1c]/50 p-3 rounded-xl border border-slate-800/40">
+                
+                {/* Columna 1: Cliente */}
+                <div>
                   <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
-                  
-                  <div className="relative flex items-center">
-                    <input 
-                      type="text"
-                      list="clientes-sugeridos"
-                      value={cliente}
-                      onChange={(e) => {
-                        const valor = e.target.value;
-                        setCliente(valor);
-                        
-                        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
-                          const coincidencia = listaClientes.find(
-                            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
-                          );
-                          if (coincidencia) {
-                            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
-                            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
-                          }
+                  <input 
+                    type="text"
+                    list="clientes-sugeridos"
+                    value={cliente}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      setCliente(valor);
+                      
+                      if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                        const coincidencia = listaClientes.find(
+                          (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
+                        );
+                        if (coincidencia) {
+                          if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
+                          if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
                         }
-                      }}
-                      placeholder="Escribe o selecciona..."
-                      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
-                    />
-                    
-                    {/* Flecha visual integrada sin lógica pesada */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
-                      <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3 h-3">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </div>
-                  </div>
-
+                      }
+                    }}
+                    placeholder="Escribe o selecciona..."
+                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  />
                   <datalist id="clientes-sugeridos">
                     {(listaClientes || []).map((c: any, idx: number) => (
                       <option key={idx} value={c.nombre} />
                     ))}
                   </datalist>
                 </div>
-
-
 
                 {/* Columna 2: RIF */}
                 <div>
