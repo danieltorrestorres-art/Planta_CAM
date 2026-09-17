@@ -29,3 +29,15 @@
     "typescript": "6.0.2"
   }
 }
+  "dependencies": {
+    "next": "14.x",
+    "react": "18.x",
+    "lucide-react": "latest",
+    "recharts": "latest",
+    "sharp": "0.34.5"
+  },
+  "optionalDependencies": {
+    "@img/sharp-linux-x64": "0.34.5"
+  }
+}
+
