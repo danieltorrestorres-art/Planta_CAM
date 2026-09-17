@@ -95,6 +95,14 @@ export default function AppMolienda() {
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
+  const [mostrarDropdown, setMostrarDropdown] = useState(false);
+
+    // 🟢 DECLARACIÓN DE VARIABLES PARA EL HISTORIAL DE PEDIDOS
+  const [datosHistorial, setDatosHistorial] = useState<any[]>([]);
+  const [montoTotalFacturado, setMontoTotalFacturado] = useState<number>(0);
+  const [ordenesProcesadas, setOrdenesProcesadas] = useState<number>(0);
+  const [ticketPromedio, setTicketPromedio] = useState<number>(0);
+
   // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
   const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
@@ -192,7 +200,16 @@ export default function AppMolienda() {
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ORIGINAL RESTAURADO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ENLACE DIRECTO FIJO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-  useEffect(() => {
+    // ====================================================================
+  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+  // ====================================================================
+  // ====================================================================
+  // 1. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+  // ====================================================================
+   // ====================================================================
+  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
+  // ====================================================================
+   useEffect(() => {
     fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
       .then(res => {
         if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
@@ -213,6 +230,71 @@ export default function AppMolienda() {
       })
       .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
   }, []);
+
+
+  // ====================================================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y aislado)
+  // ====================================================================
+   // ====================================================================
+  // 2. CARGA DE HISTORIAL DE PEDIDOS (Ruta Nativa de Google Docs)
+  // ====================================================================
+  /*
+  useEffect(() => {
+    const cargarHistorialPedidos = async () => {
+      try {
+        // 🟢 La URL nativa real de tu documento con el formato de exportación directo que Google acepta libre de CORS
+        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
+
+        const res = await fetch(URL_HISTORIAL_CSV);
+        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
+        
+        const text = await res.text();
+        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        
+        if (rows.length <= 1) {
+          setDatosHistorial([]);
+          setMontoTotalFacturado(0);
+          setOrdenesProcesadas(0);
+          setTicketPromedio(0);
+          return;
+        }
+
+        const parsedData = rows.slice(1).map((row) => {
+          const cols = row.split(',');
+          const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
+
+          // Limpieza directa en memoria para el dinero de la columna 6 antes de sumar
+          const rawPrecio = clean(cols[5]);
+          const precioLimpio = rawPrecio.replace(/[\$\s]/g, '').replace(/,/g, '.');
+
+          return {
+            id: clean(cols[0]),
+            fecha: clean(cols[1]),
+            cliente: clean(cols[2]),
+            vendedor: clean(cols[3]),
+            productos: clean(cols[4]),
+            totalUsd: parseFloat(precioLimpio) || 0
+          };
+        });
+
+        const totalPedidos = parsedData.length;
+        const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
+        const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
+
+        setDatosHistorial(parsedData);
+        setMontoTotalFacturado(sumaFacturado);
+        setOrdenesProcesadas(totalPedidos);
+        setTicketPromedio(ticketPromedioCalc);
+
+      } catch (e) {
+        console.error("Fallo controlado en historial:", e);
+      }
+    };
+
+    cargarHistorialPedidos();
+  }, []);
+*/
+
 
 
 
@@ -481,50 +563,94 @@ export default function AppMolienda() {
 
 
                        {/* SECCIÓN DATOS CLIENTE */}
-                                     <div className="mb-4">
-                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Nombre del Vendedor</label>
-                <input 
-                  type="text"
-                  value={vendedorInput}
-                  onChange={(e) => setVendedorInput(e.target.value)}
-                  placeholder="Ej: Carlos Perez"
-                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                />
-              </div>
-          
-              {/* Contenedor principal que agrupa las 3 columnas en una sola fila */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1c]/50 p-3 rounded-xl border border-slate-800/40">
-                
-                {/* Columna 1: Cliente */}
-                <div>
+                                         {/* Columna 1: Cliente */}
+                <div className="relative">
                   <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
-                  <input 
-                    type="text"
-                    list="clientes-sugeridos"
-                    value={cliente}
-                    onChange={(e) => {
-                      const valor = e.target.value;
-                      setCliente(valor);
-                      
-                      if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
-                        const coincidencia = listaClientes.find(
-                          (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
-                        );
-                        if (coincidencia) {
-                          if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
-                          if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
+                  
+                  <div className="relative flex items-center">
+                    <input 
+                      type="text"
+                      value={cliente}
+                      onChange={(e) => {
+                        const valor = e.target.value;
+                        setCliente(valor);
+                        setMostrarDropdown(true);
+                        
+                        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                          const coincidencia = listaClientes.find(
+                            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
+                          );
+                          if (coincidencia) {
+                            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
+                            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
+                          }
                         }
-                      }
-                    }}
-                    placeholder="Escribe o selecciona..."
-                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                  />
+                      }}
+                      onFocus={() => setMostrarDropdown(true)}
+                      onBlur={() => setTimeout(() => setMostrarDropdown(false), 200)}
+                      placeholder="Escribe o selecciona..."
+                      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
+                    />
+                    
+                    {/* Icono de Flecha */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                      <svg 
+                        xmlns="http://w3.org" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        strokeWidth={2.5} 
+                        stroke="currentColor" 
+                        className="w-3 h-3 transition-transform duration-200"
+                        style={{ transform: mostrarDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </div>
+                  </div>
+
+                                 {/* Columna 1: Cliente */}
+                <div className="relative">
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
+                  
+                  <div className="relative flex items-center">
+                    <input 
+                      type="text"
+                      list="clientes-sugeridos"
+                      value={cliente}
+                      onChange={(e) => {
+                        const valor = e.target.value;
+                        setCliente(valor);
+                        
+                        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                          const coincidencia = listaClientes.find(
+                            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
+                          );
+                          if (coincidencia) {
+                            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
+                            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
+                          }
+                        }
+                      }}
+                      placeholder="Escribe o selecciona..."
+                      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
+                    />
+                    
+                    {/* Flecha visual integrada sin lógica pesada */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+                      <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3 h-3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </div>
+                  </div>
+
                   <datalist id="clientes-sugeridos">
                     {(listaClientes || []).map((c: any, idx: number) => (
                       <option key={idx} value={c.nombre} />
                     ))}
                   </datalist>
                 </div>
+
+
 
                 {/* Columna 2: RIF */}
                 <div>
