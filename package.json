@@ -21,23 +21,15 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "recharts": "^3.8.1",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "sharp": "0.34.5"
   },
   "devDependencies": {
     "@types/node": "25.6.0",
     "@types/react": "19.2.14",
     "typescript": "6.0.2"
-  }
-}
-  "dependencies": {
-    "next": "14.x",
-    "react": "18.x",
-    "lucide-react": "latest",
-    "recharts": "latest",
-    "sharp": "0.34.5"
   },
   "optionalDependencies": {
     "@img/sharp-linux-x64": "0.34.5"
   }
 }
-
