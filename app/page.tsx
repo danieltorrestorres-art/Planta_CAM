@@ -95,14 +95,6 @@ export default function AppMolienda() {
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
-  const [mostrarDropdown, setMostrarDropdown] = useState(false);
-
-    // 🟢 DECLARACIÓN DE VARIABLES PARA EL HISTORIAL DE PEDIDOS
-  const [datosHistorial, setDatosHistorial] = useState<any[]>([]);
-  const [montoTotalFacturado, setMontoTotalFacturado] = useState<number>(0);
-  const [ordenesProcesadas, setOrdenesProcesadas] = useState<number>(0);
-  const [ticketPromedio, setTicketPromedio] = useState<number>(0);
-
   // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
   const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
@@ -200,110 +192,27 @@ export default function AppMolienda() {
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ORIGINAL RESTAURADO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES (ENLACE DIRECTO FIJO)
     // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-    // ====================================================================
-  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-  // ====================================================================
-  // ====================================================================
-  // 1. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-  // ====================================================================
-   // ====================================================================
-  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-  // ====================================================================
-   // 2. SÍNCRONIZACIÓN DE LA BASE DE DATOS DE CLIENTES (Directa y Segura)
   useEffect(() => {
-    const cargarClientesMolienda = async () => {
-      try {
-        const response = await fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`);
-        if (!response.ok) throw new Error("No se pudo obtener la información de clientes");
-        
-        const text = await response.text();
+    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
+      .then(res => {
+        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
+        return res.text();
+      })
+      .then(text => {
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
-        
         const parsed = rows.slice(1).map(row => {
-          // Usamos nuestro procesador seguro de líneas CSV
-          const cols = parseCSVLine(row);
-          
+          const cols = row.split(',');
+          // 🟢 PROTECCIÓN DE TIPADO: Aseguramos que si viene una celda vacía no rompa el Fetch
           return {
             nombre: cols[0] ? String(cols[0]).replace(/"/g, '').trim() : '',
             rif: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
             telefono: cols[2] ? String(cols[2]).replace(/"/g, '').trim() : ''
           };
         });
-        
         setListaClientes(parsed);
-      } catch (err) {
-        console.error("Error cargando la base de datos de clientes:", err);
-      }
-    };
-
-    cargarClientesMolienda();
+      })
+      .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
   }, []);
-
-
-
-  // ====================================================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y aislado)
-  // ====================================================================
-   // ====================================================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (Ruta Nativa de Google Docs)
-  // ====================================================================
-  /*
-  useEffect(() => {
-    const cargarHistorialPedidos = async () => {
-      try {
-        // 🟢 La URL nativa real de tu documento con el formato de exportación directo que Google acepta libre de CORS
-        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
-
-        const res = await fetch(URL_HISTORIAL_CSV);
-        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
-        
-        const text = await res.text();
-        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
-        
-        if (rows.length <= 1) {
-          setDatosHistorial([]);
-          setMontoTotalFacturado(0);
-          setOrdenesProcesadas(0);
-          setTicketPromedio(0);
-          return;
-        }
-
-        const parsedData = rows.slice(1).map((row) => {
-          const cols = row.split(',');
-          const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
-
-          // Limpieza directa en memoria para el dinero de la columna 6 antes de sumar
-          const rawPrecio = clean(cols[5]);
-          const precioLimpio = rawPrecio.replace(/[\$\s]/g, '').replace(/,/g, '.');
-
-          return {
-            id: clean(cols[0]),
-            fecha: clean(cols[1]),
-            cliente: clean(cols[2]),
-            vendedor: clean(cols[3]),
-            productos: clean(cols[4]),
-            totalUsd: parseFloat(precioLimpio) || 0
-          };
-        });
-
-        const totalPedidos = parsedData.length;
-        const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
-        const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
-
-        setDatosHistorial(parsedData);
-        setMontoTotalFacturado(sumaFacturado);
-        setOrdenesProcesadas(totalPedidos);
-        setTicketPromedio(ticketPromedioCalc);
-
-      } catch (e) {
-        console.error("Fallo controlado en historial:", e);
-      }
-    };
-
-    cargarHistorialPedidos();
-  }, []);
-*/
-
 
 
 
@@ -572,51 +481,50 @@ export default function AppMolienda() {
 
 
                        {/* SECCIÓN DATOS CLIENTE */}
-                                         {/* Columna 1: Cliente */}
-                <div className="relative">
+                                     <div className="mb-4">
+                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Nombre del Vendedor</label>
+                <input 
+                  type="text"
+                  value={vendedorInput}
+                  onChange={(e) => setVendedorInput(e.target.value)}
+                  placeholder="Ej: Carlos Perez"
+                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+          
+              {/* Contenedor principal que agrupa las 3 columnas en una sola fila */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1c]/50 p-3 rounded-xl border border-slate-800/40">
+                
+                {/* Columna 1: Cliente */}
+                <div>
                   <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
-                  
-                  <div className="relative flex items-center">
-                    <input 
-                      type="text"
-                      value={cliente}
-                      onChange={(e) => {
-                        const valor = e.target.value;
-                        setCliente(valor);
-                        setMostrarDropdown(true);
-                        
-                        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
-                          const coincidencia = listaClientes.find(
-                            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
-                          );
-                          if (coincidencia) {
-                            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
-                            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
-                          }
+                  <input 
+                    type="text"
+                    list="clientes-sugeridos"
+                    value={cliente}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      setCliente(valor);
+                      
+                      if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                        const coincidencia = listaClientes.find(
+                          (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
+                        );
+                        if (coincidencia) {
+                          if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
+                          if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
                         }
-                      }}
-                      onFocus={() => setMostrarDropdown(true)}
-                      onBlur={() => setTimeout(() => setMostrarDropdown(false), 200)}
-                      placeholder="Escribe o selecciona..."
-                      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
-                    />
-                    
-                    {/* Icono de Flecha */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                      <svg 
-                        xmlns="http://w3.org" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        strokeWidth={2.5} 
-                        stroke="currentColor" 
-                        className="w-3 h-3 transition-transform duration-200"
-                        style={{ transform: mostrarDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </div>
-                  </div>
-
+                      }
+                    }}
+                    placeholder="Escribe o selecciona..."
+                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  />
+                  <datalist id="clientes-sugeridos">
+                    {(listaClientes || []).map((c: any, idx: number) => (
+                      <option key={idx} value={c.nombre} />
+                    ))}
+                  </datalist>
+                </div>
 
                 {/* Columna 2: RIF */}
                 <div>
@@ -790,7 +698,25 @@ export default function AppMolienda() {
       </div> 
     </div> 
 
-              {loading ? (
+        {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO)*/}
+        {/* ======================================================== */}
+        {esGerente ? (
+          <div className="space-y-6 pt-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="text-emerald-400 w-5 h-5" />
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">Panel Gerencial Activo</h2>
+              </div>
+
+                            <button 
+                onClick={fetchData} 
+                className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all"
+              >
+                🔄 Sincronizar Nube
+              </button>
+            </div>
+
+            {loading ? (
               <div className="p-12 text-center text-xs text-slate-500 font-mono tracking-widest uppercase">
                 ⏳ Descargando base de datos de producción molienda...
               </div>
@@ -799,29 +725,17 @@ export default function AppMolienda() {
                 <AlertTriangle size={16} /> Error en sincronización: {error}
               </div>
             ) : (
-              <div className="space-y-6">
+              <>
                 {/* INDICADORES CLAVE GENERALES */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
-                    <p className="text-[9px] text-slate-400 uppercase font-bold">Producción Mes Actual</p>
-                    <p className="text-base font-black text-sky-400">{monthlyTotals.produccion.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
-                    <p className="text-[9px] text-slate-400 uppercase font-bold">Molienda Histórica</p>
-                    <p className="text-base font-black text-white">{(totals.c + totals.y + totals.c200 + totals.c400G + totals.c400B).toLocaleString()}</p>
-                  </div>
-                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
-                    <p className="text-[9px] text-slate-400 uppercase font-bold">Maquila Procesada</p>
-                    <p className="text-base font-black text-violet-400">{totals.maqAcumulada.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-slate-900/20 p-3 rounded-xl border border-slate-800 text-center">
-                    <p className="text-[9px] text-slate-400 uppercase font-bold">Merma Global (Tn)</p>
-                    <p className="text-base font-black text-rose-400">{totals.merma.toLocaleString()}</p>
-                  </div>
+                  <TotalCard label="Producción Mes Actual" val={monthlyTotals.produccion} col="text-sky-400" />
+                  <TotalCard label="Molienda Histórica" val={totals.c + totals.y + totals.c200 + totals.c400G + totals.c400B} col="text-white" />
+                  <TotalCard label="Maquila Procesada" val={totals.maqAcumulada} col="text-violet-400" />
+                  <TotalCard label="Merma Global (Tn)" val={totals.merma} col="text-rose-400" />
                 </div>
 
                 {/* INDICADORES DE INVENTARIO FÍSICO */}
-                <div className="bg-slate-900/20 p-4 rounded-2xl border border-slate-800/60 space-y-3 mt-4">
+                <div className="bg-slate-900/20 p-4 rounded-2xl border border-slate-800/60 space-y-3">
                   <div className="flex items-center gap-2 text-slate-400 font-bold text-[11px] uppercase tracking-wider">
                     <Package size={14} className="text-amber-400" /> Existencia de Sacos Vacíos en Planta
                   </div>
@@ -842,7 +756,7 @@ export default function AppMolienda() {
                 </div>
 
                 {/* GRÁFICO HISTÓRICO DE MOLIENDA */}
-                <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3 mt-4">
+                <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                     <CalendarDays size={13} className="text-sky-400" /> Cronograma de Production por Fecha (Últimos Registros)
                   </p>
@@ -857,33 +771,28 @@ export default function AppMolienda() {
                         <Bar dataKey="caolin" name="Caolín" stackId="a" fill="#38bdf8" />
                         <Bar dataKey="yeso" name="Yeso" stackId="a" fill="#e2e8f0" />
                         <Bar dataKey="carb200" name="C-200" stackId="a" fill="#fbbf24" />
-                        <Bar dataKey="carb400G" name="400-G" stroke="none" fill="#f43f5e" />
-                        <Bar dataKey="carb400B" name="400-B" stroke="none" fill="#10b981" />
+                        <Bar dataKey="carb400G" name="400-G" stackId="a" fill="#f43f5e" />
+                        <Bar dataKey="carb400B" name="400-B" stackId="a" fill="#10b981" />
                         <Bar dataKey="maquila" name="Maquila" stackId="a" fill="#8b5cf6" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-              </div>
+              </>
             )}
+          </div>
+        ) : (
+          <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto">
+            <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+} // 🟢 Cierre definitivo de tu función de componente principal (AppMolienda)
 
-            {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO) */}
-            {esGerente ? (
-              <div className="mt-8 space-y-6">
-                <p className="text-xs text-slate-400">Cargando datos gerenciales...</p>
-              </div>
-            ) : (
-              <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto mt-6">
-                <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
-              </div>
-            )}
-          </main>
-        </div>
-      );
-    }
-
-      
 // COMPONENTE AUXILIAR EN LA RAÍZ DEL ARCHIVO
+// 🟢 Corregido: Agregamos interfaz de tipos estricta para las propiedades de la tarjeta de totales
 interface TotalCardProps {
   label: string;
   val: number;
@@ -892,10 +801,8 @@ interface TotalCardProps {
 
 function TotalCard({ label, val, col }: TotalCardProps) {
   return (
-    <div className="bg-[#141b2d] p-4 rounded-2xl border border-slate-800 text-center shadow-lg">
-      <p className="text-[9px] text-slate-500 uppercase font-black mb-1 tracking-wider">
-        {label}
-      </p>
+    <div className="bg-[#141b2d] p-4 rounded-2xl border border-slate-800 text-center shadow-md">
+      <p className="text-[9px] text-slate-500 uppercase font-black mb-1 tracking-wider">{label}</p>
       <p className={`text-xl font-black ${col}`}>
         {val.toLocaleString(undefined, { maximumFractionDigits: 1 })}
       </p>
