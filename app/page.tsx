@@ -562,52 +562,6 @@ export default function AppMolienda() {
             </div>
 
 
-                       {/* SECCIÓN DATOS CLIENTE */}
-                                         {/* Columna 1: Cliente */}
-                <div className="relative">
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
-                  
-                  <div className="relative flex items-center">
-                    <input 
-                      type="text"
-                      value={cliente}
-                      onChange={(e) => {
-                        const valor = e.target.value;
-                        setCliente(valor);
-                        setMostrarDropdown(true);
-                        
-                        if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
-                          const coincidencia = listaClientes.find(
-                            (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
-                          );
-                          if (coincidencia) {
-                            if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
-                            if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
-                          }
-                        }
-                      }}
-                      onFocus={() => setMostrarDropdown(true)}
-                      onBlur={() => setTimeout(() => setMostrarDropdown(false), 200)}
-                      placeholder="Escribe o selecciona..."
-                      className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
-                    />
-                    
-                    {/* Icono de Flecha */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                      <svg 
-                        xmlns="http://w3.org" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        strokeWidth={2.5} 
-                        stroke="currentColor" 
-                        className="w-3 h-3 transition-transform duration-200"
-                        style={{ transform: mostrarDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </div>
-                  </div>
-
                                  {/* Columna 1: Cliente */}
                 <div className="relative">
                   <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
@@ -649,8 +603,6 @@ export default function AppMolienda() {
                     ))}
                   </datalist>
                 </div>
-
-
 
                 {/* Columna 2: RIF */}
                 <div>
