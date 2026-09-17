@@ -808,11 +808,16 @@ export default function AppMolienda() {
                 onClick={fetchData} 
                 className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all"
               >
+                           {/* 🟢 BOTÓN DESACTIVADO TEMPORALMENTE PARA COMPROBACIÓN */}
+              {/* 
+              <button className="tu-clase-de-estilo">
                 🔄 Sincronizar Nube
-              </button>
+              </button> 
+              */}
             </div>
 
             {loading ? (
+
               <div className="p-12 text-center text-xs text-slate-500 font-mono tracking-widest uppercase">
                 ⏳ Descargando base de datos de producción molienda...
               </div>
