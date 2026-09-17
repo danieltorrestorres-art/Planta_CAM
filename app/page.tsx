@@ -209,27 +209,36 @@ export default function AppMolienda() {
    // ====================================================================
   // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
   // ====================================================================
-   useEffect(() => {
-    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv")
-      .then(res => {
-        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
-        return res.text();
-      })
-      .then(text => {
+   // 2. SÍNCRONIZACIÓN DE LA BASE DE DATOS DE CLIENTES (Directa y Segura)
+  useEffect(() => {
+    const cargarClientesMolienda = async () => {
+      try {
+        const response = await fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`);
+        if (!response.ok) throw new Error("No se pudo obtener la información de clientes");
+        
+        const text = await response.text();
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        
         const parsed = rows.slice(1).map(row => {
-          const cols = row.split(',');
-          // 🟢 PROTECCIÓN DE TIPADO: Aseguramos que si viene una celda vacía no rompa el Fetch
+          // Usamos nuestro procesador seguro de líneas CSV
+          const cols = parseCSVLine(row);
+          
           return {
             nombre: cols[0] ? String(cols[0]).replace(/"/g, '').trim() : '',
             rif: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
             telefono: cols[2] ? String(cols[2]).replace(/"/g, '').trim() : ''
           };
         });
+        
         setListaClientes(parsed);
-      })
-      .catch(e => console.error("Error cargando clientes molienda desde la nube:", e));
+      } catch (err) {
+        console.error("Error cargando la base de datos de clientes:", err);
+      }
+    };
+
+    cargarClientesMolienda();
   }, []);
+
 
 
   // ====================================================================
@@ -562,18 +571,19 @@ export default function AppMolienda() {
             </div>
 
 
-                                 {/* Columna 1: Cliente */}
+                       {/* SECCIÓN DATOS CLIENTE */}
+                                         {/* Columna 1: Cliente */}
                 <div className="relative">
                   <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
                   
                   <div className="relative flex items-center">
                     <input 
                       type="text"
-                      list="clientes-sugeridos"
                       value={cliente}
                       onChange={(e) => {
                         const valor = e.target.value;
                         setCliente(valor);
+                        setMostrarDropdown(true);
                         
                         if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
                           const coincidencia = listaClientes.find(
@@ -585,24 +595,28 @@ export default function AppMolienda() {
                           }
                         }
                       }}
+                      onFocus={() => setMostrarDropdown(true)}
+                      onBlur={() => setTimeout(() => setMostrarDropdown(false), 200)}
                       placeholder="Escribe o selecciona..."
                       className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white pr-8 focus:outline-none focus:border-sky-500"
                     />
                     
-                    {/* Flecha visual integrada sin lógica pesada */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
-                      <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3 h-3">
+                    {/* Icono de Flecha */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                      <svg 
+                        xmlns="http://w3.org" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        strokeWidth={2.5} 
+                        stroke="currentColor" 
+                        className="w-3 h-3 transition-transform duration-200"
+                        style={{ transform: mostrarDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                       </svg>
                     </div>
                   </div>
 
-                  <datalist id="clientes-sugeridos">
-                    {(listaClientes || []).map((c: any, idx: number) => (
-                      <option key={idx} value={c.nombre} />
-                    ))}
-                  </datalist>
-                </div>
 
                 {/* Columna 2: RIF */}
                 <div>
@@ -776,15 +790,19 @@ export default function AppMolienda() {
       </div> 
     </div> 
 
-        {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO)*/}
+                {/* VISTA 2: PANEL GERENCIAL RESTRINGIDO (SÓLO SI AUTENTICADO) */}
         {/* ======================================================== */}
         {esGerente ? (
-          <div className="space-y-6 pt-4 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="text-emerald-400 w-5 h-5" />
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider">Panel Gerencial Activo</h2>
-              </div>
+          <div className="mt-8 space-y-6">
+            {/* Aquí adentro va el código de tus tarjetas de pedidos y gráficas */}
+            <p className="text-xs text-slate-400">Cargando datos gerenciales...</p>
+          </div>
+        ) : (
+          <div className="text-center p-8 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800/60 max-w-7xl mx-auto mt-6">
+            <p className="text-xs text-slate-500 font-medium">🔒 Autentícate en el Área Gerencial en la parte superior para habilitar gráficas e inventarios en la nube.</p>
+          </div>
+        )}
+
 
                             <button 
                 onClick={fetchData} 
