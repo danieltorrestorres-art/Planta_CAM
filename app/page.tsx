@@ -6,6 +6,7 @@ import { Settings, Trash2, CalendarDays, Hammer, Package, AlertTriangle, Shoppin
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=2047349943&single=true&output=csv";
 const CLIENTES_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv";
+
 // Clave de prueba para la vista de gerencia
 const PIN_GERENCIA = "1234";
 
@@ -95,12 +96,6 @@ export default function AppMolienda() {
   const [cantidad, setCantidad] = useState('');
   const [empaque, setEmpaque] = useState('Sacos 25kg');
   const [notas, setNotas] = useState('');
-    // 🟢 DECLARACIÓN DE VARIABLES PARA EL HISTORIAL DE PEDIDOS
-  const [datosHistorial, setDatosHistorial] = useState<any[]>([]);
-  const [montoTotalFacturado, setMontoTotalFacturado] = useState<number>(0);
-  const [ordenesProcesadas, setOrdenesProcesadas] = useState<number>(0);
-  const [ticketPromedio, setTicketPromedio] = useState<number>(0);
-
   // 🟢 Corregido: Se tipó el carrito como un arreglo de objetos dinámicos
   const [carrito, setCarrito] = useState<any[]>([]);
   const [copiado, setCopiado] = useState(false);
@@ -194,114 +189,22 @@ export default function AppMolienda() {
   }, []);
 
   // 2. CARGA DE BASE DE DATOS DE CLIENTES
-      // 2. CARGA DE BASE DE DATOS DE CLIENTES (SINTAXIS CORREGIDA)
-    // 2. CARGA DE BASE DE DATOS DE CLIENTES (ORIGINAL RESTAURADO)
-    // 2. CARGA DE BASE DE DATOS DE CLIENTES (ENLACE DIRECTO FIJO)
-    // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-    // ====================================================================
-  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-  // ====================================================================
-  // ====================================================================
-  // 1. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-  // ====================================================================
-   // ====================================================================
-  // 2. CARGA DE BASE DE DATOS DE CLIENTES AUTOMATIZADA DESDE LA NUBE
-  // ====================================================================
   useEffect(() => {
-    const URL_CLIENTES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv";
-
-    // 🟢 Agregamos un control de cabecera estándar para indicarle a Google que libere la cuota local
-    fetch(URL_CLIENTES, { cache: 'no-store' })
-      .then(res => {
-        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
-        return res.text();
-      })
+    fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`)
+      .then(res => res.text())
       .then(text => {
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
         const parsed = rows.slice(1).map(row => {
           const cols = row.split(',');
           return {
-            nombre: cols[0] ? String(cols[0]).replace(/"/g, '').trim() : '',
-            rif: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
-            telefono: cols[2] ? String(cols[2]).replace(/"/g, '').trim() : ''
+            nombre: cols[0]?.replace(/"/g, '').trim() || '',
+            rif: cols[1]?.replace(/"/g, '').trim() || '',
+            telefono: cols[2]?.replace(/"/g, '').trim() || ''
           };
         });
         setListaClientes(parsed);
-      })
-      .catch(e => {
-        console.error("Error cargando clientes molienda desde la nube:", e);
-      });
+      }).catch(e => console.error("Error cargando clientes molienda:", e));
   }, []);
-
-
-  // ====================================================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (Directo y aislado)
-  // ====================================================================
-   // ====================================================================
-  // 2. CARGA DE HISTORIAL DE PEDIDOS (Ruta Nativa de Google Docs)
-  // ====================================================================
-  /*
-  useEffect(() => {
-    const cargarHistorialPedidos = async () => {
-      try {
-        // 🟢 La URL nativa real de tu documento con el formato de exportación directo que Google acepta libre de CORS
-        const URL_HISTORIAL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=36826609&single=true&output=csv";
-
-        const res = await fetch(URL_HISTORIAL_CSV);
-        if (!res.ok) throw new Error("Error al conectar con la base de datos de Google");
-        
-        const text = await res.text();
-        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
-        
-        if (rows.length <= 1) {
-          setDatosHistorial([]);
-          setMontoTotalFacturado(0);
-          setOrdenesProcesadas(0);
-          setTicketPromedio(0);
-          return;
-        }
-
-        const parsedData = rows.slice(1).map((row) => {
-          const cols = row.split(',');
-          const clean = (val: string) => val ? String(val).replace(/"/g, '').trim() : '';
-
-          // Limpieza directa en memoria para el dinero de la columna 6 antes de sumar
-          const rawPrecio = clean(cols[5]);
-          const precioLimpio = rawPrecio.replace(/[\$\s]/g, '').replace(/,/g, '.');
-
-          return {
-            id: clean(cols[0]),
-            fecha: clean(cols[1]),
-            cliente: clean(cols[2]),
-            vendedor: clean(cols[3]),
-            productos: clean(cols[4]),
-            totalUsd: parseFloat(precioLimpio) || 0
-          };
-        });
-
-        const totalPedidos = parsedData.length;
-        const sumaFacturado = parsedData.reduce((acc, curr) => acc + curr.totalUsd, 0);
-        const ticketPromedioCalc = totalPedidos > 0 ? (sumaFacturado / totalPedidos) : 0;
-
-        setDatosHistorial(parsedData);
-        setMontoTotalFacturado(sumaFacturado);
-        setOrdenesProcesadas(totalPedidos);
-        setTicketPromedio(ticketPromedioCalc);
-
-      } catch (e) {
-        console.error("Fallo controlado en historial:", e);
-      }
-    };
-
-    cargarHistorialPedidos();
-  }, []);
-*/
-
-
-
-
-
-
 
   // 3. SEGURIDAD Y AUTENTICACIÓN GERENCIAL
   // 🟢 Corregido: Se agregó el tipado estricto al evento del formulario
@@ -565,77 +468,73 @@ export default function AppMolienda() {
 
 
                        {/* SECCIÓN DATOS CLIENTE */}
-                                     <div className="mb-4">
+                           <div className="mb-4">
                 <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Nombre del Vendedor</label>
                 <input 
                   type="text"
                   value={vendedorInput}
                   onChange={(e) => setVendedorInput(e.target.value)}
-                  placeholder="Ej: Carlos Perez"
+                  placeholder="Ej: Daniel Torres"
                   className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                 />
               </div>
           
-              {/* Contenedor principal que agrupa las 3 columnas en una sola fila */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1c]/50 p-3 rounded-xl border border-slate-800/40">
-                
-                {/* Columna 1: Cliente */}
-                <div>
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
-                  <input 
-                    type="text"
-                    list="clientes-sugeridos"
-                    value={cliente}
-                    onChange={(e) => {
-                      const valor = e.target.value;
-                      setCliente(valor);
-                      
-                      if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
-                        const coincidencia = listaClientes.find(
-                          (c) => c && c.nombre && String(c.nombre).toLowerCase() === valor.toLowerCase()
-                        );
-                        if (coincidencia) {
-                          if (coincidencia.rif && typeof setRifCliente === 'function') setRifCliente(coincidencia.rif);
-                          if (coincidencia.telefono && typeof setTelefonoCliente === 'function') setTelefonoCliente(coincidencia.telefono);
-                        }
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1c]/50 p-3 rounded-xl border border-slate-800/40">
+              <div>
+                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre del Cliente</label>
+                <input 
+                  type="text"
+                  list="clientes-sugeridos"
+                  value={cliente}
+                                    onChange={(e) => {
+                    const valor = e.target.value;
+                    setCliente(valor);
+                    
+                    // Buscamos si el cliente existe en tu lista para traer su RIF automáticamente
+                    if (typeof listaClientes !== 'undefined' && Array.isArray(listaClientes)) {
+                      const coincidencia = listaClientes.find(
+                        (c) => c.nombre.toLowerCase() === valor.toLowerCase()
+                      );
+                      if (coincidencia && coincidencia.rif && typeof setRifCliente === 'function') {
+                        setRifCliente(coincidencia.rif);
                       }
-                    }}
-                    placeholder="Escribe o selecciona..."
-                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                  />
-                  <datalist id="clientes-sugeridos">
-                    {(listaClientes || []).map((c: any, idx: number) => (
-                      <option key={idx} value={c.nombre} />
-                    ))}
-                  </datalist>
-                </div>
+                    }
+                  }}
 
-                {/* Columna 2: RIF */}
-                <div>
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">RIF / Cédula</label>
-                  <input 
-                    type="text"
-                    value={rifCliente}
-                    onChange={(e) => setRifCliente(e.target.value)}
-                    placeholder="J-XXXXXXXX-X"
-                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
+                  placeholder="Escribe o selecciona..."
+                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                />
+                <datalist id="clientes-sugeridos">
+                  {listaClientes.map((c: any, idx: number) => (
+                    <option key={idx} value={c.nombre} />
+                  ))}
+                </datalist>
+              </div>
 
-                {/* Columna 3: Teléfono Móvil */}
-                <div>
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Teléfono Móvil</label>
-                  <input 
-                    type="text"
-                    value={telefonoCliente}
-                    onChange={(e) => setTelefonoCliente(e.target.value)}
-                    placeholder="04XX-XXXXXXX"
-                    className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">RIF / Cédula</label>
+                <input 
+                  type="text"
+                  value={rifCliente}
+                  onChange={(e) => setRifCliente(e.target.value)}
+                  placeholder="J-XXXXXXXX-X"
+                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
 
-              </div> {/* Cierre definitivo de la fila de 3 columnas */}
-       
+                            <div>
+                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Teléfono Móvil</label>
+                <input 
+                  type="text"
+                  value={telefonoCliente}
+                  onChange={(e) => setTelefonoCliente(e.target.value)}
+                  placeholder="04XX-XXXXXXX"
+                  className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+            </div>
+
             {/* SECCIÓN AGREGAR ÍTEM */}
             <div className="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-4">
               <p className="text-[11px] font-bold text-sky-400 uppercase">Agregar Producto al Pedido</p>
