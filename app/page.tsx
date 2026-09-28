@@ -8,7 +8,7 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtn
 const CLIENTES_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=209700947&single=true&output=csv";
 
 // Clave de prueba para la vista de gerencia
-const PIN_GERENCIA = "1234";
+const PIN_GERENCIA = "cam01";
 
 const PRODUCTOS_DISPONIBLES = [
   "Caolín",
@@ -67,6 +67,15 @@ const parseDateParts = (fechaStr: string) => {
 
   return { day, month, year };
 };
+const OBTENER_PRECIO_FIJO_PROYECCION = (familia: string) => {
+  switch (familia) {
+    case 'TALCO': return 3250.00;
+    case 'CAOLIN': return 930.00;      
+    case 'CARBONATO': return 650.00;   
+    case 'AZUFRE': return 450.00;
+    default: return 0;
+  }
+};
 
 export default function AppMolienda() {
   // NAVEGACIÓN Y AUTENTICACIÓN
@@ -81,11 +90,13 @@ export default function AppMolienda() {
   const [listaClientes, setListaClientes] = useState<any[]>([]);
   const [rifCliente, setRifCliente] = useState('');
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Exclusivo para las Tarjetas de Producción
+const [loadingClientes, setLoadingClientes] = useState(false); // Exclusivo para la Lista de Clientes
+
   // 🟢 Corregido: Se tipó el estado de error para aceptar strings o null
   const [error, setError] = useState<string | null>(null);
   const [inventory, setInventory] = useState({ pol: 0, pap: 0, big: 0 });
-  const [totals, setTotals] = useState({ c: 0, y: 0, c200: 0, c400G: 0, c400B: 0, merma: 0, desp: 0, maqAcumulada: 0 });
+  const [totals, setTotals] = useState({ c: 0, y: 0, c200: 0, c400G: 0, c400B: 0, talco: 0, merma: 0, desp: 0, maqAcumulada: 0 });
   const [monthlyTotals, setMonthlyTotals] = useState({ produccion: 0, merma: 0 });
 
   // ESTADOS DEL SISTEMA DE VENTAS / PEDIDOS
@@ -101,99 +112,119 @@ export default function AppMolienda() {
   const [copiado, setCopiado] = useState(false);
   const [procesandoPedido, setProcesandoPedido] = useState(false);
   const [precioUnitario, setPrecioUnitario] = useState('');
+  const [formulario, setFormulario] = useState({
+  cliente: '',          // Mantenemos tus campos actuales intactos
+  cantidad: '',
+  empaque: 'Sacos 25kg', // Ya inicializado por defecto en Sacos 25kg
+  precioUnitario: '650', // Precio sugerido inicial de Carbonatos
+  totalUSD: 0,
+  
+  // 💥 AQUÍ AGREGAMOS LOS DOS NUEVOS CAMPOS:
+  familia: 'CARBONATO', 
+  notaPedido: ''        // Cuadro libre para colocar "CAM 8441", "Prueba 46", etc.
+});
 
-  const fetchData = async () => {
-    try {
-      setError(null);
-      const response = await fetch(`${SHEET_URL}&t=${Date.now()}`);
-      if (!response.ok) throw new Error("No se pudo obtener la información de Google Sheets");
 
-            const text = await response.text();
-      const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+ const fetchData = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    // 🟢 ESTE ES EL ENLACE DIRECTO DE TU HOJA DE PRODUCCIÓN (MOLIENDA DIARIA)
+    const URL_PRODUCCION_MOLIENDA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdLg6sfZnJtnHR9slWfBCPJYOg4qU6HqGLEtTuuKWecWVasxqjOwqDaUUqc0jXqQ9Ap3JxYV4leTQG/pub?gid=2047349943&single=true&output=csv";
+    
+    const response = await fetch(`${URL_PRODUCCION_MOLIENDA}&t=${Date.now()}`);
+    if (!response.ok) throw new Error("Google Sheets no respondió a tiempo");
 
-      // 🟢 Corregido: Se tipó el objeto de mapeo para evitar restricciones estrictas de tipado dinámico
-      const dailyMap: Record<string, any> = {};
-      let tc = 0, ty = 0, t200 = 0, t400g = 0, t400b = 0, tm = 0, td = 0, tmaq = 0;
-      let mProd = 0, mMerma = 0;
-      let lastPol = 0, lastPap = 0, lastBig = 0;
+    const text = await response.text();
+    const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
 
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
+    const dailyMap: Record<string, any> = {};
+    let tc = 0, ty = 0, t200 = 0, t400g = 0, t400b = 0, tm = 0, td = 0, tmaq = 0;
+    let mProd = 0, mMerma = 0;
+    let lastPol = 0, lastPap = 0, lastBig = 0;
+    let tTalco = 0;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-      // 🟢 Saneado: Unificamos y cerramos un solo ciclo for matemático sin códigos duplicados huérfanos
-      for (let i = 1; i < rows.length; i++) {
-        const cols = parseCSVLine(rows[i]);
-        
-        // Asignamos los índices reales de las columnas para los sacos
-        if (cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
-        if (cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
-        if (cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
+    for (let i = 1; i < rows.length; i++) {
+      const cols = parseCSVLine(rows[i]);
+      
+      // Índices de tus sacos
+      if (cleanNum(cols[11]) > 0) lastPol = cleanNum(cols[11]);
+      if (cleanNum(cols[12]) > 0) lastPap = cleanNum(cols[12]);
+      if (cleanNum(cols[13]) > 0) lastBig = cleanNum(cols[13]);
 
-        // Extraemos la fecha de la primera columna (índice 0)
-        const fechaStr = cols[0]?.trim();
-        
-        if (fechaStr && fechaStr.length > 5) {
-          // Asignamos los índices correctos para la producción diaria
-          const vC = cleanNum(cols[1]);
-          const vY = cleanNum(cols[2]);
-          const v200 = cleanNum(cols[3]);
-          const v400g = cleanNum(cols[4]);
-          const v400b = cleanNum(cols[5]);
-          const vDesp = cleanNum(cols[6]);
-          const vM = cleanNum(cols[7]);
-          const vMaquila = cleanNum(cols[14]);
+      const fechaStr = cols[0]?.trim();
+      
+      if (fechaStr && fechaStr.length > 5) {
+        const vC = cleanNum(cols[1]);
+        const vY = cleanNum(cols[2]);
+        const v200 = cleanNum(cols[3]);
+        const v400g = cleanNum(cols[4]);
+        const v400b = cleanNum(cols[5]);
+        const vDesp = cleanNum(cols[6]);
+        const vM = cleanNum(cols[7]);
+        const vMaquila = cleanNum(cols[14]);
+        const vTalco = cleanNum(cols[18]); // 💎 Lee directo de la columna 19 del Google Sheet
 
-          tc += vC; ty += vY; t200 += v200; t400g += v400g; t400b += v400b; td += vDesp; tm += vM;
-          tmaq += vMaquila;
 
-          const dateParts = parseDateParts(fechaStr);
-          if (dateParts && dateParts.month === currentMonth && dateParts.year === currentYear) {
-            mProd += (vC + vY + v200 + v400g + v400b);
-            mMerma += vM;
-          }
+        tc += vC; ty += vY; t200 += v200; t400g += v400g; t400b += v400b; td += vDesp; tm += vM;
+        tmaq += vMaquila; tTalco += vTalco;
 
-          if (!dailyMap[fechaStr]) {
-            dailyMap[fechaStr] = { fecha: fechaStr, caolin: 0, yeso: 0, carb200: 0, carb400G: 0, carb400B: 0, despachado: 0, merma: 0, maquila: 0 };
-          }
-          dailyMap[fechaStr].caolin += vC;
-          dailyMap[fechaStr].yeso += vY;
-          dailyMap[fechaStr].carb200 += v200;
-          dailyMap[fechaStr].carb400G += v400g;
-          dailyMap[fechaStr].carb400B += v400b;
-          dailyMap[fechaStr].despachado += vDesp;
-          dailyMap[fechaStr].merma += vM;
-          dailyMap[fechaStr].maquila += vMaquila;
+        const dateParts = parseDateParts(fechaStr);
+        if (dateParts && dateParts.month === currentMonth && dateParts.year === currentYear) {
+          mProd += (vC + vY + v200 + v400g + v400b + vTalco);
+          mMerma += vM;
         }
-      }
 
-      setData(Object.values(dailyMap));
-      setTotals({ c: tc, y: ty, c200: t200, c400G: t400g, c400B: t400b, merma: tm, desp: td, maqAcumulada: tmaq });
-      setMonthlyTotals({ produccion: mProd, merma: mMerma });
-      setInventory({ pol: lastPol, pap: lastPap, big: lastBig });
-    } catch (e) {
-      // 🟢 Corregido: Validación nativa estricta de catch para TypeScript en Vercel
-      if (e instanceof Error) {
-        setError(e.message);
-      } else {
-        setError("Error al procesar los datos");
+        if (!dailyMap[fechaStr]) {
+          dailyMap[fechaStr] = { fecha: fechaStr, caolin: 0, yeso: 0, carb200: 0, carb400G: 0, carb400B: 0, talco: 0,  despachado: 0, merma: 0, maquila: 0 };
+        }
+        dailyMap[fechaStr].caolin += vC;
+        dailyMap[fechaStr].yeso += vY;
+        dailyMap[fechaStr].carb200 += v200;
+        dailyMap[fechaStr].carb400G += v400g;
+        dailyMap[fechaStr].carb400B += v400b;
+        dailyMap[fechaStr].talco += vTalco;
+        dailyMap[fechaStr].despachado += vDesp;
+        dailyMap[fechaStr].merma += vM;
+        dailyMap[fechaStr].maquila += vMaquila;
       }
-    } finally {
-      setLoading(false);
     }
-  };
 
-  // 1. SINCRONIZACIÓN DE DATOS DIARIOS
-  useEffect(() => { 
-    fetchData(); 
-  }, []);
+    setData(Object.values(dailyMap));
+    setTotals({ c: tc, y: ty, c200: t200, c400G: t400g, c400B: t400b, talco: tTalco, merma: tm, desp: td, maqAcumulada: tmaq });
+    setMonthlyTotals({ produccion: mProd, merma: mMerma });
+    setInventory({ pol: lastPol, pap: lastPap, big: lastBig });
+    
+    // Si llegó hasta aquí, limpiamos el error por completo de la pantalla
+    setError(null);
 
-  // 2. CARGA DE BASE DE DATOS DE CLIENTES
+  } catch (e: any) {
+    console.error("Error en fetchData:", e);
+    setError("Error en sincronización: Failed to fetch. Verifica el link de molienda.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+ // 2. CARGA DE BASE DE DATOS DE CLIENTES (AUTOMÁTICA Y BLINDADA)
+   // 2. CARGA DE BASE DE DATOS DE CLIENTES (BLINDADA Y SEPARADA)
   useEffect(() => {
-    fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`)
-      .then(res => res.text())
-      .then(text => {
+    const URL_CLIENTES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSemTPK9NBvZdnD9rytZeKgQmMPEqfOnqjX728M3Kj6NumQy5UNDR1pqWTz8AAVq5Do9efXUTmh7djV/pub?gid=0&single=true&output=csv";
+
+    const cargarClientesDeLaNube = async () => {
+      try {
+        setLoadingClientes(true); // 🟢 Usamos el cargador propio de clientes
+        const res = await fetch(`${URL_CLIENTES_CSV}&t=${Date.now()}`);
+        
+        if (!res.ok) throw new Error("Error al descargar clientes");
+
+        const text = await res.text();
         const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        
         const parsed = rows.slice(1).map(row => {
           const cols = row.split(',');
           return {
@@ -202,9 +233,40 @@ export default function AppMolienda() {
             telefono: cols[2]?.replace(/"/g, '').trim() || ''
           };
         });
-        setListaClientes(parsed);
-      }).catch(e => console.error("Error cargando clientes molienda:", e));
-  }, []);
+
+        const clientesUnicos = parsed.filter((cliente, index, self) =>
+          index === self.findIndex((c) => c.rif === cliente.rif)
+        );
+
+        setListaClientes(clientesUnicos);
+
+      } catch (error) {
+        console.warn("Fallo silencioso en clientes:", error);
+      } finally {
+        setLoadingClientes(false); // 🟢 Apagamos solo el cargador de clientes
+      }
+    };
+
+    cargarClientesDeLaNube();
+  }, []); // El array vacío asegura que SOLO se cargue una vez al abrir la app y no se borre nunca
+
+  // 2. CARGA DE BASE DE DATOS DE CLIENTES
+  //useEffect(() => {
+   // fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`)
+    //  .then(res => res.text())
+   //   .then(text => {
+    //    const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
+      //  const parsed = rows.slice(1).map(row => {
+         // const cols = row.split(',');
+        //  return {
+          //  nombre: cols[0]?.replace(/"/g, '').trim() || '',
+         //   rif: cols[1]?.replace(/"/g, '').trim() || '',
+          //  telefono: cols[2]?.replace(/"/g, '').trim() || ''
+         // };
+       // });
+       // setListaClientes(parsed);
+     // }).catch(e => console.error("Error cargando clientes molienda:", e));
+  //}, []);
 
   // 3. SEGURIDAD Y AUTENTICACIÓN GERENCIAL
   // 🟢 Corregido: Se agregó el tipado estricto al evento del formulario
@@ -585,9 +647,9 @@ export default function AppMolienda() {
                     onChange={(e) => setEmpaque(e.target.value)}
                     className="w-full bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
                   >
-                    <option value="Sacos 25kg">Sacos 25kg</option>
+                    <option value="Sacos 25kg">Sacos Papel 25kg</option>
                     <option value="Big Bags 1000kg">Big Bags 1000kg</option>
-                    <option value="A granel">A granel</option>
+                    <option value="A granel">Sacos Polipropileno 25kg</option>
                   </select>
                 </div>
               </div>
@@ -601,17 +663,20 @@ export default function AppMolienda() {
                 + Añadir al Pedido
               </button>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas u Observaciones Especiales</label>
+                           <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 p-3.5 rounded-xl border border-orange-500/20 shadow-sm">
+                <label className="block text-[10px] font-bold text-orange-400 uppercase mb-1 tracking-wider">
+                  Código de Despacho / Notas Especiales
+                </label>
                 <textarea 
                   value={notas}
                   onChange={(e) => setNotas(e.target.value)}
-                  placeholder="Ej: Despachar antes de las 2:00 PM"
-                  className="w-full h-16 bg-[#0a0f1c] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 resize-none"
+                  placeholder="Ej: CAM 8441, color crema, despachar antes de las 2:00 PM..."
+                  className="w-full h-16 bg-[#0a0f1c] border border-orange-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 resize-none transition-all placeholder-slate-500 shadow-inner"
                 />
               </div>
             </div>
           </div>
+
           
           {carrito.length > 0 && (
             <button
@@ -712,7 +777,7 @@ export default function AppMolienda() {
                 {/* INDICADORES CLAVE GENERALES */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <TotalCard label="Producción Mes Actual" val={monthlyTotals.produccion} col="text-sky-400" />
-                  <TotalCard label="Molienda Histórica" val={totals.c + totals.y + totals.c200 + totals.c400G + totals.c400B} col="text-white" />
+                  <TotalCard label="Molienda Histórica" val={totals.c + totals.y + totals.c200 + totals.c400G + totals.c400B + totals.talco} col="text-white" />
                   <TotalCard label="Maquila Procesada" val={totals.maqAcumulada} col="text-violet-400" />
                   <TotalCard label="Merma Global (Tn)" val={totals.merma} col="text-rose-400" />
                 </div>
@@ -738,10 +803,62 @@ export default function AppMolienda() {
                   </div>
                 </div>
 
-                {/* GRÁFICO HISTÓRICO DE MOLIENDA */}
+                                {/* 📊 HERRAMIENTA VISUAL: DISTRIBUCIÓN DE VENTAS (MOLIENDA EN USD) */}
+                <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      📊 Volumen Financiero de Ventas por Producto
+                    </p>
+                    <p className="text-[11px] text-slate-500 font-sans">
+                      Ingreso estimado en dólares según los totales acumulados de la molienda (USD)
+                    </p>
+                  </div>
+
+                  {/* Barras de distribución financiera fluidas con Tailwind */}
+                  <div className="space-y-3 pt-1">
+                    {[
+                      { nombre: "Talco", monto: totals.talco * 3250, color: "bg-[#0f172a]" },          // Azul Oscuro Profundo (Slate/Navy)
+                      { nombre: "Caolín", monto: totals.c * 830, color: "bg-[#1e3a8a]" },            // Azul Marino
+                      { nombre: "Yeso", monto: totals.y * 250, color: "bg-[#2563eb]" },              // Azul Real Corporativo
+                      { nombre: "Carbonato 200", monto: totals.c200 * 330, color: "bg-[#3b82f6]" },   // Azul Brillante
+                      { nombre: "Carbonato 400G", monto: totals.c400G * 610, color: "bg-[#60a5fa]" }, // Azul Claro / Cielo
+                      { nombre: "Carbonato 400B", monto: totals.c400B * 700, color: "bg-[#93c5fd]" }, // Azul Celeste Soft
+                    ].map((prod) => {
+                      // 🟢 CORREGIDO: Se estructuró el cálculo dinámico y se removió la coma suelta que causaba conflicto
+                      const maxMonto = Math.max(
+                        (totals.talco * 3250) || 1,
+                        (totals.c * 830) || 1,
+                        (totals.y * 250) || 1,
+                        (totals.c200 * 330) || 1,
+                        (totals.c400G * 610) || 1,
+                        (totals.c400B * 700) || 1
+                      );
+                      const porcentaje = Math.min(100, Math.max(5, (prod.monto / maxMonto) * 100));
+
+                      return (
+                        <div key={prod.nombre} className="space-y-1">
+                          <div className="flex justify-between text-[11px] font-mono">
+                            <span className="text-slate-300 font-sans font-medium">{prod.nombre}</span>
+                            <span className="text-emerald-400 font-bold">
+                              \${prod.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                            <div 
+                              className={`${prod.color} h-full rounded-full transition-all duration-1000 ease-out`}
+                              style={{ width: `${porcentaje}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })} {/* 🟢 CORREGIDO: Se cerró correctamente el ciclo .map con su llave y paréntesis correspondientes */}
+                  </div>
+                </div>
+
+                {/* 📈 GRÁFICO HISTÓRICO DE MOLIENDA (CRONOGRAMA DE SACOS) */}
                 <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <CalendarDays size={13} className="text-sky-400" /> Cronograma de Production por Fecha (Últimos Registros)
+                    <CalendarDays size={13} className="text-sky-400" /> Cronograma de Producción por Fecha (Últimos Registros)
                   </p>
                   <div className="h-64 w-full text-xs font-mono">
                     <ResponsiveContainer width="100%" height="100%">
@@ -757,6 +874,7 @@ export default function AppMolienda() {
                         <Bar dataKey="carb400G" name="400-G" stackId="a" fill="#f43f5e" />
                         <Bar dataKey="carb400B" name="400-B" stackId="a" fill="#10b981" />
                         <Bar dataKey="maquila" name="Maquila" stackId="a" fill="#8b5cf6" />
+                       <Bar dataKey="talco" name="Talco" stackId="a" fill="#6366f1" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -772,7 +890,8 @@ export default function AppMolienda() {
       </main>
     </div>
   );
-} // 🟢 Cierre definitivo de tu función de componente principal (AppMolienda)
+} // 🟢 Cierre definitivo del componente principal AppMolienda
+
 
 // COMPONENTE AUXILIAR EN LA RAÍZ DEL ARCHIVO
 // 🟢 Corregido: Agregamos interfaz de tipos estricta para las propiedades de la tarjeta de totales
