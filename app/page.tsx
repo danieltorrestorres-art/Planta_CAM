@@ -210,63 +210,47 @@ const [loadingClientes, setLoadingClientes] = useState(false); // Exclusivo para
   }
 };
 
- // 2. CARGA DE BASE DE DATOS DE CLIENTES (AUTOMÁTICA Y BLINDADA)
-   // 2. CARGA DE BASE DE DATOS DE CLIENTES (BLINDADA Y SEPARADA)
-  useEffect(() => {
-    const URL_CLIENTES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSemTPK9NBvZdnD9rytZeKgQmMPEqfOnqjX728M3Kj6NumQy5UNDR1pqWTz8AAVq5Do9efXUTmh7djV/pub?gid=0&single=true&output=csv";
+ // 2. CARGA DE BASE DE DATOS DE CLIENTES (BLINDADA, SEPARADA Y CORREGIDA)
+useEffect(() => {
+  const URL_CLIENTES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSemTPK9NBvZdnD9rytZeKgQmMPEqfOnqjX728M3Kj6NumQy5UNDR1pqWTz8AAVq5Do9efXUTmh7djV/pub?gid=0&single=true&output=csv";
 
-    const cargarClientesDeLaNube = async () => {
-      try {
-        setLoadingClientes(true); // 🟢 Usamos el cargador propio de clientes
-        const res = await fetch(`${URL_CLIENTES_CSV}&t=${Date.now()}`);
-        
-        if (!res.ok) throw new Error("Error al descargar clientes");
+  const cargarClientesDeLaNube = async () => {
+    try {
+      setLoadingClientes(true);
+      const res = await fetch(`${URL_CLIENTES_CSV}&t=${Date.now()}`);
+      
+      if (!res.ok) throw new Error("Error al descargar clientes");
 
-        const text = await res.text();
-        const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
-        
-        const parsed = rows.slice(1).map(row => {
-          const cols = row.split(',');
-          return {
-            nombre: cols[0]?.replace(/"/g, '').trim() || '',
-            rif: cols[1]?.replace(/"/g, '').trim() || '',
-            telefono: cols[2]?.replace(/"/g, '').trim() || ''
-          };
-        });
+      const text = await res.text();
+      const rows = text.split(\(/\r\)?\n/).filter(line => line.trim() !== "");
+      
+      const parsed = rows.slice(1).map(row => {
+        const cols = row.split(',');
+        return {
+          nombre: cols[0]?.replace(/"/g, '').trim() || '',
+          rif: cols[1]?.replace(/"/g, '').trim() || '',
+          telefono: cols[2]?.replace(/"/g, '').trim() || ''
+        };
+      });
 
-        const clientesUnicos = parsed.filter((cliente, index, self) =>
-          index === self.findIndex((c) => c.rif === cliente.rif)
-        );
+      // CORRECCIÓN CRÍTICA: No eliminamos los clientes nuevos que tengan el RIF vacío
+      const clientesUnicos = parsed.filter((cliente, index, self) => {
+        if (cliente.rif === '') return true; // Si no tiene RIF, lo deja pasar siempre
+        return index === self.findIndex((c) => c.rif === cliente.rif); // Si tiene RIF, valida duplicados
+      });
 
-        setListaClientes(clientesUnicos);
+      setListaClientes(clientesUnicos);
 
-      } catch (error) {
-        console.warn("Fallo silencioso en clientes:", error);
-      } finally {
-        setLoadingClientes(false); // 🟢 Apagamos solo el cargador de clientes
-      }
-    };
+    } catch (error) {
+      console.warn("Fallo silencioso en clientes:", error);
+    } finally {
+      setLoadingClientes(false);
+    }
+  };
 
-    cargarClientesDeLaNube();
-  }, []); // El array vacío asegura que SOLO se cargue una vez al abrir la app y no se borre nunca
+  cargarClientesDeLaNube();
+}, []);
 
-  // 2. CARGA DE BASE DE DATOS DE CLIENTES
-  //useEffect(() => {
-   // fetch(`${CLIENTES_SHEET_URL}&t=${Date.now()}`)
-    //  .then(res => res.text())
-   //   .then(text => {
-    //    const rows = text.split(/\r?\n/).filter(line => line.trim() !== "");
-      //  const parsed = rows.slice(1).map(row => {
-         // const cols = row.split(',');
-        //  return {
-          //  nombre: cols[0]?.replace(/"/g, '').trim() || '',
-         //   rif: cols[1]?.replace(/"/g, '').trim() || '',
-          //  telefono: cols[2]?.replace(/"/g, '').trim() || ''
-         // };
-       // });
-       // setListaClientes(parsed);
-     // }).catch(e => console.error("Error cargando clientes molienda:", e));
-  //}, []);
 
   // 3. SEGURIDAD Y AUTENTICACIÓN GERENCIAL
   // 🟢 Corregido: Se agregó el tipado estricto al evento del formulario
