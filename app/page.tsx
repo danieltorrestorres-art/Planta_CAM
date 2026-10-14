@@ -213,6 +213,7 @@ const [loadingClientes, setLoadingClientes] = useState(false); // Exclusivo para
  // 2. CARGA DE BASE DE DATOS DE CLIENTES (BLINDADA, SEPARADA Y CORREGIDA)
 useEffect(() => {
   const URL_CLIENTES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSemTPK9NBvZdnD9rytZeKgQmMPEqfOnqjX728M3Kj6NumQy5UNDR1pqWTz8AAVq5Do9efXUTmh7djV/pub?gid=0&single=true&output=csv";
+// 2. CARGA DE BASE DE DATOS DE CLIENTES (BLINDADA, SEPARADA Y CORREGIDA)
 
   const cargarClientesDeLaNube = async () => {
     try {
@@ -222,7 +223,9 @@ useEffect(() => {
       if (!res.ok) throw new Error("Error al descargar clientes");
 
       const text = await res.text();
-      const rows = text.split(\(/\r\)?\n/).filter(line => line.trim() !== "");
+      
+      // Separación directa por salto de línea sin expresiones regulares
+      const rows = text.split('\n').filter(line => line.trim() !== "");
       
       const parsed = rows.slice(1).map(row => {
         const cols = row.split(',');
@@ -233,10 +236,9 @@ useEffect(() => {
         };
       });
 
-      // CORRECCIÓN CRÍTICA: No eliminamos los clientes nuevos que tengan el RIF vacío
       const clientesUnicos = parsed.filter((cliente, index, self) => {
-        if (cliente.rif === '') return true; // Si no tiene RIF, lo deja pasar siempre
-        return index === self.findIndex((c) => c.rif === cliente.rif); // Si tiene RIF, valida duplicados
+        if (cliente.rif === '') return true;
+        return index === self.findIndex((c) => c.rif === cliente.rif);
       });
 
       setListaClientes(clientesUnicos);
