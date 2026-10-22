@@ -768,7 +768,7 @@ useEffect(() => {
                   <TotalCard label="Producción Mes Actual" val={monthlyTotals.produccion} col="text-sky-400" />
                   <TotalCard label="Molienda Histórica" val={totals.c + totals.y + totals.c200 + totals.c400G + totals.c400B + totals.talco} col="text-white" />
                   <TotalCard label="Maquila Procesada" val={totals.maqAcumulada} col="text-violet-400" />
-                  <TotalCard label="Merma Global (Tn)" val={totals.merma} col="text-rose-400" />
+                  <TotalCard label="Despacho Total (Tn)" val={totals.desp} col="text-rose-400" />
                 </div>
 
                 {/* INDICADORES DE INVENTARIO FÍSICO */}
