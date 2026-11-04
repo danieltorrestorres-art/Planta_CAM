@@ -810,7 +810,7 @@ useEffect(() => {
                       { nombre: "Caolín", monto: totals.c * 830, color: "bg-[#1e3a8a]" },            // Azul Marino
                       { nombre: "Yeso", monto: totals.y * 250, color: "bg-[#2563eb]" },              // Azul Real Corporativo
                       { nombre: "Carbonato 200", monto: totals.c200 * 330, color: "bg-[#3b82f6]" },   // Azul Brillante
-                      { nombre: "Carbonato 400G", monto: totals.c400G * 610, color: "bg-[#60a5fa]" }, // Azul Claro / Cielo
+                      { nombre: "Carbonato 400G", monto: totals.c400G || 0, color: "bg-[#60a5fa]" }, // Azul Claro / Cielo
                       { nombre: "Carbonato 400B", monto: totals.c400B * 700, color: "bg-[#93c5fd]" }, // Azul Celeste Soft
                     ].map((prod) => {
                       // 🟢 CORREGIDO: Se estructuró el cálculo dinámico y se removió la coma suelta que causaba conflicto
@@ -819,7 +819,7 @@ useEffect(() => {
                         (totals.c * 830) || 1,
                         (totals.y * 250) || 1,
                         (totals.c200 * 330) || 1,
-                        (totals.c400G * 610) || 1,
+                        (totals.c400G) || 1,
                         (totals.c400B * 700) || 1
                       );
                       const porcentaje = Math.min(100, Math.max(5, (prod.monto / maxMonto) * 100));
