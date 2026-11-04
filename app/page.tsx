@@ -811,7 +811,7 @@ useEffect(() => {
     { nombre: "Caolín", monto: totals.c * 830, color: "bg-blue-500" },            // Azul Corporativo
     { nombre: "Yeso", monto: totals.y * 250, color: "bg-indigo-500" },            // Azul Índigo Profundo
     { nombre: "Carbonato 200", monto: totals.c200 * 330, color: "bg-cyan-400" },   // Azul Turquesa / Cián
-    { nombre: "Carbonato 400G", monto: (totals.c400G || 0) * 1407.48, color: "bg-teal-400" },  // Verde Azulado / Menta
+    { nombre: "Carbonato 400G", monto: (totals.c400G || 0) * 260, color: "bg-teal-400" },  // Verde Azulado / Menta
     { nombre: "Carbonato 400B", monto: totals.c400B * 700, color: "bg-sky-500" },  // Azul Cielo
   ].map((prod) => {
 
@@ -822,7 +822,7 @@ useEffect(() => {
                         (totals.c * 830) || 1,
                         (totals.y * 250) || 1,
                         (totals.c200 * 330) || 1,
-                        ((totals.c400G || 0) * 1407.48) || 1,
+                        ((totals.c400G || 0) * 260) || 1,
                         (totals.c400B * 700) || 1
                       );
                       const porcentaje = Math.min(100, Math.max(5, (prod.monto / maxMonto) * 100));
