@@ -804,7 +804,7 @@ useEffect(() => {
                   </div>
 
                   {/* Barras de distribución financiera fluidas con Tailwind */}
-                  {/* Barras de distribución financiera fluidas con Tailwind */}
+                 {/* Barras de distribución financiera fluidas con Tailwind */}
 <div className="space-y-3 pt-1">
   {[
     { nombre: "Talco", monto: totals.talco * 3250, color: "bg-sky-400" },          // Azul Tecnológico Brillante
@@ -814,6 +814,7 @@ useEffect(() => {
     { nombre: "Carbonato 400G", monto: totals.c400G || 0, color: "bg-teal-400" },  // Verde Azulado / Menta
     { nombre: "Carbonato 400B", monto: totals.c400B * 700, color: "bg-sky-500" },  // Azul Cielo
   ].map((prod) => {
+
 
                       // 🟢 CORREGIDO: Se estructuró el cálculo dinámico y se removió la coma suelta que causaba conflicto
                       const maxMonto = Math.max(
